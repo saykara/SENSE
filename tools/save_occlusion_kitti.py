@@ -21,7 +21,6 @@ import numpy as np
 import time
 import math
 import cv2
-import scipy.misc as smisc
 from PIL import Image
 from tqdm import tqdm
 

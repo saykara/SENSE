@@ -4,7 +4,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 """
 import numpy as np
 import matplotlib.colors as color
-from scipy.misc import imread, imsave
+from imageio import imread, imwrite
 import scipy.io as sio
 
 TAG_CHAR = 'PIEH'

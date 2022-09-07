@@ -24,7 +24,7 @@ import numpy as np
 import time
 import math
 import cv2
-import scipy.misc as smisc
+import imageio
 from PIL import Image
 from tqdm import tqdm
 import argparse
@@ -177,15 +177,15 @@ def main(args):
 	# save results
 	print('==> Saving results.')
 	os.makedirs('data/results', exist_ok=True)
-	smisc.imsave('data/results/000010_flow_raw.png', kitti_viz.flow_to_color(flow_raw))
-	smisc.imsave('data/results/000010_flow_rigid.png', kitti_viz.flow_to_color(flow_rigid))
-	smisc.imsave('data/results/000010_disp0.png', kitti_viz.disp_to_color(disp0))
-	smisc.imsave('data/results/000010_disp1_raw.png', kitti_viz.disp_to_color(disp1_raw))
-	smisc.imsave('data/results/000010_disp1_rigid.png', kitti_viz.disp_to_color(disp1_rigid))
-	smisc.imsave('data/results/000010_disp1_nn.png', kitti_viz.disp_to_color(disp1_nn))
+	imageio.imsave('data/results/000010_flow_raw.png', kitti_viz.flow_to_color(flow_raw))
+	imageio.imsave('data/results/000010_flow_rigid.png', kitti_viz.flow_to_color(flow_rigid))
+	imageio.imsave('data/results/000010_disp0.png', kitti_viz.disp_to_color(disp0))
+	imageio.imsave('data/results/000010_disp1_raw.png', kitti_viz.disp_to_color(disp1_raw))
+	imageio.imsave('data/results/000010_disp1_rigid.png', kitti_viz.disp_to_color(disp1_rigid))
+	imageio.imsave('data/results/000010_disp1_nn.png', kitti_viz.disp_to_color(disp1_nn))
 
 	seg_im = CITYSCAPE_PALETTE[seg]
-	smisc.imsave('data/results/000010_seg.png', seg_im.astype('uint8'))
+	imageio.imsave('data/results/000010_seg.png', seg_im.astype('uint8'))
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser('SENSE demo for scene flow estimation')

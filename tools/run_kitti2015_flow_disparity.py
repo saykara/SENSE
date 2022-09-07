@@ -6,7 +6,6 @@ import os
 import glob
 import numpy as np
 import argparse
-import scipy.misc as smisc
 import cv2
 import scipy.io as sio
 from PIL import Image

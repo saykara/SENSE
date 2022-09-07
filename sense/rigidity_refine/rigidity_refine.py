@@ -7,7 +7,7 @@ import scipy.io as sio
 import os.path as osp
 import matplotlib.pyplot as plt
 
-from scipy.misc import imread, imsave
+from imageio import imread, imwrite
 
 from .io_utils import *
 from .KITTI_simple_loader import KITTI_sceneflow
@@ -273,7 +273,7 @@ def main(args):
         vis_flow = flow_visualize(flow_composite)
         refined_flow_vis_path = seg_gen_path.replace('seg', 'flow_rigid_vis')
         check_directory(refined_flow_vis_path)
-        imsave(refined_flow_vis_path, vis_flow)
+        imwrite(refined_flow_vis_path, vis_flow)
 
         refined_disparity_path = disp1_gen_path.replace('disp_1_raw', 'disp_1_rigid')
         check_directory(refined_disparity_path)

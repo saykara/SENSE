@@ -36,5 +36,5 @@ dependencies:
     - torch==1.3.0
     - torchvision==0.4.1
     - tqdm==4.46.0
-prefix: /home/hzjiang/anaconda3/envs/sense_release
+prefix: /home/utku/anaconda3/envs/sense_release
 

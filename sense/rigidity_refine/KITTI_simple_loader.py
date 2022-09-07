@@ -10,7 +10,7 @@ import os.path as osp
 import torch.utils.data as data
 import cv2
 
-from scipy.misc import imread
+from imageio import imread
 
 
 
