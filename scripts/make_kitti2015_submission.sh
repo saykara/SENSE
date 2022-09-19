@@ -16,7 +16,7 @@ DATASET=kitti2015
 SPLIT=testing
 VIS_DIR=output/${DATASET}_${MODEL_ID}/$SPLIT
 
-KITTI_DIR=/home/hzjiang/workspace/Data/KITTI_scene_flow
+KITTI_DIR=/home/utku/Thesis/KITTI_scene_flow
 
 # generate raw optical flow and stereo disparity
 echo '### Running hoslitic scene model'
@@ -44,7 +44,7 @@ python tools/run_kitti2015_flow_disparity.py eval \
 echo '### Running semantic segmentation'
 python tools/run_kitti2015_segmentation.py eval \
     --dataset $DATASET \
-    --datapath /home/hzjiang/workspace/Data/KITTI_Semantics \
+    --datapath /home/utku/Thesis/KITTI_Semantics \
     --split $SPLIT \
     --enc psm \
     --dec pwcdc \
