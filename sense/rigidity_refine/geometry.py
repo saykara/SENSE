@@ -43,8 +43,8 @@ def meshgrid(H, W, B=None, is_cuda=False):
     if is_cuda:
         u, v = u.cuda(), v.cuda()
 
-    u = u.repeat(H, 1).view(1,H,W)
-    v = v.repeat(W, 1).t_().view(1,H,W)
+    u = u.repeat(H, 1).reshape(1,H,W)
+    v = v.repeat(W, 1).t_().reshape(1,H,W)
 
     if B is not None:
         u, v = u.repeat(B,1,1,1), v.repeat(B,1,1,1)
@@ -60,8 +60,8 @@ def generate_xy_grid(B, H, W, K):
     fx, fy, cx, cy = K.split(1,dim=1)
     uv_grid = meshgrid(H, W, B)
     u_grid, v_grid = [uv.type_as(cx) for uv in uv_grid]
-    px = ((u_grid.view(B,-1) - cx) / fx).view(B,1,H,W)
-    py = ((v_grid.view(B,-1) - cy) / fy).view(B,1,H,W)
+    px = ((u_grid.reshape(B,-1) - cx) / fx).reshape(B,1,H,W)
+    py = ((v_grid.reshape(B,-1) - cy) / fy).reshape(B,1,H,W)
     return px, py, u_grid, v_grid
 
 def batch_inverse_Rt(R, t):
@@ -72,9 +72,9 @@ def batch_inverse_Rt(R, t):
     (tested)
     """
     R_t = R.transpose(1,2)
-    t_inv = -torch.bmm(R_t, t.contiguous().view(-1, 3, 1))
+    t_inv = -torch.bmm(R_t, t.contiguous().reshape(-1, 3, 1))
 
-    return R_t, t_inv.view(-1,3)
+    return R_t, t_inv.reshape(-1,3)
 
 def batch_Rt_compose(d_R, d_t, R0, t0):
     """ Compose operator of R, t: [d_R*R | d_R*t + d_t] 
@@ -86,8 +86,8 @@ def batch_Rt_compose(d_R, d_t, R0, t0):
     (tested)
     """
     R1 = d_R.bmm(R0)
-    t1 = d_R.bmm(t0.view(-1,3,1)) + d_t.view(-1,3,1)
-    return R1, t1.view(-1,3)
+    t1 = d_R.bmm(t0.reshape(-1,3,1)) + d_t.reshape(-1,3,1)
+    return R1, t1.reshape(-1,3)
 
 def batch_Rt_between(R0, t0, R1, t1): 
     """ Between operator of R, t, transform of [R0, t0] to [R1, t1]
@@ -100,7 +100,7 @@ def batch_Rt_between(R0, t0, R1, t1):
     """
     R0t = R0.transpose(1,2)
     dR = R1.bmm(R0t)
-    dt = t1.view(-1,3) - dR.bmm(t0.view(-1,3,1)).view(-1,3)
+    dt = t1.reshape(-1,3) - dR.bmm(t0.reshape(-1,3,1)).reshape(-1,3)
     return dR, dt
 
 def batch_skew(w):
@@ -114,7 +114,7 @@ def batch_skew(w):
     assert(D == 3)
     o = torch.zeros(B).type_as(w)
     w0, w1, w2 = w[:, 0], w[:, 1], w[:, 2]
-    return torch.stack((o, -w2, w1, w2, o, -w0, -w1, w0, o), 1).view(B, 3, 3)
+    return torch.stack((o, -w2, w1, w2, o, -w0, -w1, w0, o), 1).reshape(B, 3, 3)
 
 def batch_twist2Mat(twist):
     """ Calculate the rotation matrix using Rodrigues' Rotation Formula
@@ -126,12 +126,12 @@ def batch_twist2Mat(twist):
     (tested with cv2.Rodrigues implementation)
     """
     B = twist.size()[0]
-    theta = twist.norm(p=2, dim=1).view(B, 1)
+    theta = twist.norm(p=2, dim=1).reshape(B, 1)
     w_so3 = twist / theta.expand(B, 3)
     W = batch_skew(w_so3)
     return torch.eye(3).repeat(B,1,1).type_as(W) \
-        + W*sin(theta.view(B,1,1)) \
-        + W.bmm(W)*(1-cos(theta).view(B,1,1))
+        + W*sin(theta.reshape(B,1,1)) \
+        + W.bmm(W)*(1-cos(theta).reshape(B,1,1))
 
 def batch_mat2angle(R):
     """ Calcuate the angle from SO3 Rotation
@@ -156,9 +156,9 @@ def batch_mat2twist(R):
     theta = batch_mat2angle(R)
     # refers to gtsam implementation 
     # https://bitbucket.org/gtborg/gtsam/src/c84496632fd6e062e69cb1b9d7b77ac8d9390fbd/gtsam/geometry/SO3.cpp#lines-170
-    r11,r12,r13,r21,r22,r23,r31,r32,r33 = torch.split(R.view(B,-1),1,dim=1)
+    r11,r12,r13,r21,r22,r23,r31,r32,r33 = torch.split(R.reshape(B,-1),1,dim=1)
     res = torch.cat([r32-r23, r13-r31, r21-r12],dim=1)  
-    return (0.5*theta/sin(theta)).view(B,1) * res
+    return (0.5*theta/sin(theta)).reshape(B,1) * res
 
 def batch_warp_inverse_depth(p_x, p_y, p_invD, pose, K):
     """ Compute the warping grid w.r.t. the SE3 transform given the inverse depth
@@ -174,18 +174,18 @@ def batch_warp_inverse_depth(p_x, p_y, p_invD, pose, K):
     I = torch.ones((B,1,H,W)).type_as(p_invD)
     x_y_1 = torch.cat((p_x, p_y, I), dim=1)
 
-    warped = torch.bmm(R, x_y_1.view(B,3,H*W)) + \
-        t.view(B,3,1).expand(B,3,H*W) * p_invD.view(B, 1, H*W).expand(B,3,H*W)
+    warped = torch.bmm(R, x_y_1.reshape(B,3,H*W)) + \
+        t.reshape(B,3,1).expand(B,3,H*W) * p_invD.reshape(B, 1, H*W).expand(B,3,H*W)
 
     x_, y_, s_ = torch.split(warped, 1, dim=1)
     fx, fy, cx, cy = torch.split(K, 1, dim=1)
 
-    u_ = (x_ / s_).view(B,-1) * fx + cx
-    v_ = (y_ / s_).view(B,-1) * fy + cy
+    u_ = (x_ / s_).reshape(B,-1) * fx + cx
+    v_ = (y_ / s_).reshape(B,-1) * fy + cy
 
-    inv_z_ = p_invD / s_.view(B,1,H,W)
+    inv_z_ = p_invD / s_.reshape(B,1,H,W)
 
-    return u_.view(B,1,H,W), v_.view(B,1,H,W), inv_z_
+    return u_.reshape(B,1,H,W), v_.reshape(B,1,H,W), inv_z_
 
 def batch_warp_affine(pu, pv, affine):
     # A = affine[:,:,:2]
@@ -193,8 +193,8 @@ def batch_warp_affine(pu, pv, affine):
     B,_,H,W = pu.shape
     ones = torch.ones(pu.shape).type_as(pu)
     uv = torch.cat((pu, pv, ones), dim=1)
-    uv = torch.bmm(affine, uv.view(B,3,-1)) #+ t.view(B,2,1)
-    return uv[:,0].view(B,1,H,W), uv[:,1].view(B,1,H,W)
+    uv = torch.bmm(affine, uv.reshape(B,3,-1)) #+ t.reshape(B,2,1)
+    return uv[:,0].reshape(B,1,H,W), uv[:,1].reshape(B,1,H,W)
 
 def check_occ(inv_z_buffer, inv_z_ref, u, v, thres=1e-1):
     """ z-buffering check of occlusion 
@@ -206,10 +206,10 @@ def check_occ(inv_z_buffer, inv_z_ref, u, v, thres=1e-1):
     inv_z_warped = warp_features(inv_z_ref, u, v)
     inlier = (inv_z_buffer > inv_z_warped - thres)
 
-    inviews = inlier & (u > 0) & (u < W) & \
+    inreshapes = inlier & (u > 0) & (u < W) & \
         (v > 0) & (v < H)
 
-    return 1-inviews
+    return 1-inreshapes
 
 def warp_features(F, u, v):
     """ Warp the feature map (F) w.r.t. the grid (u, v)
@@ -218,9 +218,9 @@ def warp_features(F, u, v):
 
     u_norm = u / ((W-1)/2) - 1
     v_norm = v / ((H-1)/2) - 1
-    uv_grid = torch.cat((u_norm.view(B,H,W,1), v_norm.view(B,H,W,1)), dim=3)
+    uv_grid = torch.cat((u_norm.reshape(B,H,W,1), v_norm.reshape(B,H,W,1)), dim=3)
     F_warped = nn.functional.grid_sample(F, uv_grid,
-        mode='bilinear', padding_mode='border')
+        mode='bilinear', padding_mode='border', align_corners=True)
     return F_warped
 
 def warp_feature_from_flow(F, flow):
@@ -230,8 +230,8 @@ def warp_feature_from_flow(F, flow):
     uv = meshgrid(H, W, B)
     uv = [x.type_as(flow) for x in uv]
     return warp_features(F, 
-        uv[0]+flow[:,0,:,:].view(B,1,H,W), 
-        uv[1]+flow[:,1,:,:].view(B,1,H,W))
+        uv[0]+flow[:,0,:,:].reshape(B,1,H,W), 
+        uv[1]+flow[:,1,:,:].reshape(B,1,H,W))
 
 def warp_feature_from_disparity(F, disp):
     """ Warp the feature map from the target disparity map
@@ -254,9 +254,9 @@ def warp_feature_from_disparity(F, disp):
     # for all invalid disparity region, set it to 0
     F_w[(disp==0).expand(B,C,H,W)] = 0
 
-    in_view = (u_warped >= 0) & (u_warped < W)
+    in_reshape = (u_warped >= 0) & (u_warped < W)
 
-    return F_w, in_view
+    return F_w, in_reshape
 
 def compute_warped_residual(pose, x0, x1, K, invD0, invD1,  
     px, py, obj_mask = None):
@@ -288,8 +288,8 @@ def compute_warped_residual(pose, x0, x1, K, invD0, invD1,
 
     B, C, H, W = x0.shape
     if obj_mask is not None:
-        # determine whether the object is in-view
-        occ = occ & (obj_mask.view(B,1,H,W) < 1)
+        # determine whether the object is in-reshape
+        occ = occ & (obj_mask.reshape(B,1,H,W) < 1)
 
     residuals[occ.expand(B,C,H,W)] = 0
 
@@ -302,8 +302,8 @@ def batch_transform_xyz(xyz_tensor, R, t, get_Jacobian=True):
     :param t: translation vector B * 3
     """
     B, C, H, W = xyz_tensor.size()
-    t_tensor = t.contiguous().view(B,3,1).repeat(1,1,H*W)
-    p_tensor = xyz_tensor.contiguous().view(B, C, H*W)
+    t_tensor = t.contiguous().reshape(B,3,1).repeat(1,1,H*W)
+    p_tensor = xyz_tensor.contiguous().reshape(B, C, H*W)
     # the transformation process is simply:
     # p' = t + R*p
     xyz_t_tensor = torch.baddbmm(t_tensor, R, p_tensor)
@@ -311,11 +311,11 @@ def batch_transform_xyz(xyz_tensor, R, t, get_Jacobian=True):
     if get_Jacobian:
         # return both the transformed tensor and its Jacobian matrix
         J_r = R.bmm(batch_skew_symmetric_matrix(-1*p_tensor.permute(0,2,1)))
-        J_t = -1 * torch.eye(3).view(1,3,3).expand(B,3,3)
+        J_t = -1 * torch.eye(3).reshape(1,3,3).expand(B,3,3)
         J = torch.cat((J_r, J_t), 1)
-        return xyz_t_tensor.view(B, C, H, W), J
+        return xyz_t_tensor.reshape(B, C, H, W), J
     else:
-        return xyz_t_tensor.view(B, C, H, W)
+        return xyz_t_tensor.reshape(B, C, H, W)
 
 def flow_from_rigid_transform(depth, extrinsic, intrinsic):
     """
@@ -360,7 +360,7 @@ def batch_inverse_project(depth, K):
         B, _, H, W = depth.size()
 
     x, y = generate_xy_grid(B,H,W,K)
-    z = depth.view(B,1,H,W)
+    z = depth.reshape(B,1,H,W)
     return torch.cat((x*z, y*z, z), dim=1)
 
 def batch_euler2mat(ai, aj, ak, axes='sxyz'):

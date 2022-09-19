@@ -98,7 +98,7 @@ def make_data_loader(args):
 		flow_transforms.CenterCrop((352, 1216))
 		])
 
-	kitti_dir = '/home/hzjiang/workspace/Data/KITTI_scene_flow'
+	kitti_dir = '/home/utku/Thesis/KITTI_scene_flow'
 	train_data, test_data = make_kitti2015_paths(
 		kitti_dir, 
 		args.kitti_cache_dir, 

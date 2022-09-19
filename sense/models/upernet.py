@@ -73,7 +73,7 @@ class UPerNetLight(nn.Module):
         # input_size = conv5.size()
         # ppm_out = [conv5]
         # for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
-        #     ppm_out.append(pool_conv(nn.functional.upsample(
+        #     ppm_out.append(pool_conv(nn.functional.interpolate(
         #         pool_scale(conv5),
         #         (input_size[2], input_size[3]),
         #         mode='bilinear', align_corners=False)))
@@ -87,7 +87,7 @@ class UPerNetLight(nn.Module):
             conv_x = conv_out[i]
             conv_x = self.fpn_in[i](conv_x) # lateral branch
 
-            f = nn.functional.upsample(
+            f = nn.functional.interpolate(
                 f, size=conv_x.size()[2:], mode='bilinear', align_corners=False) # top-down branch
             f = conv_x + f
 
@@ -97,7 +97,7 @@ class UPerNetLight(nn.Module):
         output_size = fpn_feature_list[0].size()[2:]
         fusion_list = [fpn_feature_list[0]]
         for i in range(1, len(fpn_feature_list)):
-            fusion_list.append(nn.functional.upsample(
+            fusion_list.append(nn.functional.interpolate(
                 fpn_feature_list[i],
                 output_size,
                 mode='bilinear', align_corners=False))
@@ -105,13 +105,13 @@ class UPerNetLight(nn.Module):
         x = self.conv_last(fusion_out)
 
         if use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x / T, dim=1)
             return x
 
         if segSize is not None:
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
         x = nn.functional.log_softmax(x / T, dim=1)
 
@@ -169,7 +169,7 @@ class UPerNet(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
-            ppm_out.append(pool_conv(nn.functional.upsample(
+            ppm_out.append(pool_conv(nn.functional.interpolate(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False)))
@@ -181,7 +181,7 @@ class UPerNet(nn.Module):
             conv_x = conv_out[i]
             conv_x = self.fpn_in[i](conv_x) # lateral branch
 
-            f = nn.functional.upsample(
+            f = nn.functional.interpolate(
                 f, size=conv_x.size()[2:], mode='bilinear', align_corners=False) # top-down branch
             f = conv_x + f
 
@@ -191,7 +191,7 @@ class UPerNet(nn.Module):
         output_size = fpn_feature_list[0].size()[2:]
         fusion_list = [fpn_feature_list[0]]
         for i in range(1, len(fpn_feature_list)):
-            fusion_list.append(nn.functional.upsample(
+            fusion_list.append(nn.functional.interpolate(
                 fpn_feature_list[i],
                 output_size,
                 mode='bilinear', align_corners=False))
@@ -199,13 +199,13 @@ class UPerNet(nn.Module):
         x = self.conv_last(fusion_out)
 
         if use_softmax:  # is True during inference
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
             x = nn.functional.softmax(x / T, dim=1)
             return x
 
         if segSize is not None:
-            x = nn.functional.upsample(
+            x = nn.functional.interpolate(
                 x, size=segSize, mode='bilinear', align_corners=False)
         x = nn.functional.log_softmax(x / T, dim=1)
 

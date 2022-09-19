@@ -232,7 +232,7 @@ class PWCDispDecoder(nn.Module):
         disp_corr4 = F.relu(disp_corr4)
         x = torch.cat((disp_corr4, c14, up_depth5, up_disp_feat5), 1)
         if self.pred_occ and self.cat_occ:
-            x = torch.cat((x, F.upsample(occ5, scale_factor=2, mode='bilinear')), 1)
+            x = torch.cat((x, F.interpolate(occ5, scale_factor=2, mode='bilinear')), 1)
         x = torch.cat((x, self.disp_conv4_0(x)),1)
         x = torch.cat((x, self.disp_conv4_1(x)),1)
         x = torch.cat((x, self.disp_conv4_2(x)),1)
@@ -254,7 +254,7 @@ class PWCDispDecoder(nn.Module):
         disp_corr3 = F.relu(disp_corr3)
         x = torch.cat((disp_corr3, c13, up_depth4, up_flow_feat4), 1)
         if self.pred_occ and self.cat_occ:
-            x = torch.cat((x, F.upsample(occ4, scale_factor=2, mode='bilinear')), 1)
+            x = torch.cat((x, F.interpolate(occ4, scale_factor=2, mode='bilinear')), 1)
         x = torch.cat((x, self.disp_conv3_0(x)),1)
         x = torch.cat((x, self.disp_conv3_1(x)),1)
         x = torch.cat((x, self.disp_conv3_2(x)),1)
@@ -276,7 +276,7 @@ class PWCDispDecoder(nn.Module):
         disp_corr2 = F.relu(disp_corr2)
         x = torch.cat((disp_corr2, c12, up_depth3, up_disp_feat3), 1)
         if self.pred_occ and self.cat_occ:
-            x = torch.cat((x, F.upsample(occ3, scale_factor=2, mode='bilinear')), 1)
+            x = torch.cat((x, F.interpolate(occ3, scale_factor=2, mode='bilinear')), 1)
         x = torch.cat((x, self.disp_conv2_0(x)),1)
         x = torch.cat((x, self.disp_conv2_1(x)),1)
         x = torch.cat((x, self.disp_conv2_2(x)),1)
@@ -305,30 +305,30 @@ class PWCDispDecoder(nn.Module):
 
         # refinement
         if self.disp_refinement is not None:
-            depth1 = F.upsample(depth2, scale_factor=2, mode='bilinear', align_corners=False)
+            depth1 = F.interpolate(depth2, scale_factor=2, mode='bilinear', align_corners=False)
             disp_warp1 = disp_warp(c21, depth1 / 2)
             x = torch.cat((depth1, c11, disp_warp1), 1)
             if self.pred_occ and self.cat_occ:
-                x = torch.cat((x, F.upsample(occ2, scale_factor=2, mode='bilinear')), 1)
+                x = torch.cat((x, F.interpolate(occ2, scale_factor=2, mode='bilinear')), 1)
             depth1_res, x = self.disp_refinement(x)
-            depth1 = F.upsample(depth2_raw, 
+            depth1 = F.interpolate(depth2_raw, 
                 scale_factor=2, 
                 mode='bilinear', 
                 align_corners=False
             ) + depth1_res
             depth1 = F.relu(depth1)
-            depth1 = F.upsample(depth1, scale_factor=2, mode='bilinear', align_corners=False)
+            depth1 = F.interpolate(depth1, scale_factor=2, mode='bilinear', align_corners=False)
             # depth1 = torch.squeeze(depth1, 1)
             if self.pred_occ:
-                occ1 = F.upsample(occ2, scale_factor=2, mode='bilinear', align_corners=False)
+                occ1 = F.interpolate(occ2, scale_factor=2, mode='bilinear', align_corners=False)
                 occ1_res = self.predict_occ1(x)
                 occ1 += occ1_res
-                occ1 = F.upsample(occ1, scale_factor=2, mode='bilinear', align_corners=False)
+                occ1 = F.interpolate(occ1, scale_factor=2, mode='bilinear', align_corners=False)
 
-        depth2 = F.upsample(depth2, scale_factor=4, mode='bilinear', align_corners=False)
-        depth3 = F.upsample(depth3, scale_factor=4, mode='bilinear', align_corners=False)
-        depth4 = F.upsample(depth4, scale_factor=4, mode='bilinear', align_corners=False)
-        depth5 = F.upsample(depth5, scale_factor=4, mode='bilinear', align_corners=False)
+        depth2 = F.interpolate(depth2, scale_factor=4, mode='bilinear', align_corners=False)
+        depth3 = F.interpolate(depth3, scale_factor=4, mode='bilinear', align_corners=False)
+        depth4 = F.interpolate(depth4, scale_factor=4, mode='bilinear', align_corners=False)
+        depth5 = F.interpolate(depth5, scale_factor=4, mode='bilinear', align_corners=False)
 
         # depth2 = torch.squeeze(depth2, 1)
         # depth3 = torch.squeeze(depth3, 1)
@@ -339,10 +339,10 @@ class PWCDispDecoder(nn.Module):
 
         occ_output = ()
         if self.pred_occ:
-            occ2 = F.upsample(occ2, scale_factor=4, mode='bilinear', align_corners=False)
-            occ3 = F.upsample(occ3, scale_factor=4, mode='bilinear', align_corners=False)
-            occ4 = F.upsample(occ4, scale_factor=4, mode='bilinear', align_corners=False)
-            occ5 = F.upsample(occ5, scale_factor=4, mode='bilinear', align_corners=False)
+            occ2 = F.interpolate(occ2, scale_factor=4, mode='bilinear', align_corners=False)
+            occ3 = F.interpolate(occ3, scale_factor=4, mode='bilinear', align_corners=False)
+            occ4 = F.interpolate(occ4, scale_factor=4, mode='bilinear', align_corners=False)
+            occ5 = F.interpolate(occ5, scale_factor=4, mode='bilinear', align_corners=False)
             occ_output = (occ2, occ3, occ4, occ5)
 
         if self.disp_refinement is not None:
@@ -485,7 +485,7 @@ class PWCFlowDecoder(nn.Module):
         flow_corr4 = F.relu(flow_corr4)
         x = torch.cat((flow_corr4, c14, up_flow5, up_flow_feat5), 1)
         if self.pred_occ and self.cat_occ:
-            x = torch.cat((x, F.upsample(occ5, scale_factor=2, mode='bilinear')), 1)
+            x = torch.cat((x, F.interpolate(occ5, scale_factor=2, mode='bilinear')), 1)
         x = torch.cat((x, self.flow_conv4_0(x)),1)
         x = torch.cat((x, self.flow_conv4_1(x)),1)
         x = torch.cat((x, self.flow_conv4_2(x)),1)
@@ -503,7 +503,7 @@ class PWCFlowDecoder(nn.Module):
         flow_corr3 = F.relu(flow_corr3)
         x = torch.cat((flow_corr3, c13, up_flow4, up_flow_feat4), 1)
         if self.pred_occ and self.cat_occ:
-            x = torch.cat((x, F.upsample(occ4, scale_factor=2, mode='bilinear')), 1)
+            x = torch.cat((x, F.interpolate(occ4, scale_factor=2, mode='bilinear')), 1)
         x = torch.cat((x, self.flow_conv3_0(x)),1)
         x = torch.cat((x, self.flow_conv3_1(x)),1)
         x = torch.cat((x, self.flow_conv3_2(x)),1)
@@ -521,7 +521,7 @@ class PWCFlowDecoder(nn.Module):
         flow_corr2 = F.relu(flow_corr2)
         x = torch.cat((flow_corr2, c12, up_flow3, up_flow_feat3), 1)
         if self.pred_occ and self.cat_occ:
-            x = torch.cat((x, F.upsample(occ3, scale_factor=2, mode='bilinear')), 1)
+            x = torch.cat((x, F.interpolate(occ3, scale_factor=2, mode='bilinear')), 1)
         x = torch.cat((x, self.flow_conv2_0(x)),1)
         x = torch.cat((x, self.flow_conv2_1(x)),1)
         x = torch.cat((x, self.flow_conv2_2(x)),1)
@@ -541,35 +541,35 @@ class PWCFlowDecoder(nn.Module):
 
         # refinement
         if self.flow_refinement is not None:
-            flow1 = F.upsample(flow2, scale_factor=2, mode='bilinear', align_corners=False)
+            flow1 = F.interpolate(flow2, scale_factor=2, mode='bilinear', align_corners=False)
             flow_warp1 = flow_warp(c21, flow1 * 10.0)
             x = torch.cat((flow1, c11, flow_warp1), 1)
             if self.pred_occ and self.cat_occ:
-                x = torch.cat((x, F.upsample(occ2, scale_factor=2, mode='bilinear')), 1)
+                x = torch.cat((x, F.interpolate(occ2, scale_factor=2, mode='bilinear')), 1)
             flow1_res, x = self.flow_refinement(x)
             flow1 += flow1_res
             if self.upsample_output:
-                flow1 = F.upsample(flow1, scale_factor=2, mode='bilinear', align_corners=False)
-            # flow1 = F.upsample(flow1, scale_factor=2, mode='bilinear', align_corners=False)
+                flow1 = F.interpolate(flow1, scale_factor=2, mode='bilinear', align_corners=False)
+            # flow1 = F.interpolate(flow1, scale_factor=2, mode='bilinear', align_corners=False)
             if self.pred_occ:
-                occ1 = F.upsample(occ2, scale_factor=2, mode='bilinear', align_corners=False)
+                occ1 = F.interpolate(occ2, scale_factor=2, mode='bilinear', align_corners=False)
                 occ1_res = self.predict_occ1(x)
                 occ1 += occ1_res
-                occ1 = F.upsample(occ1, scale_factor=2, mode='bilinear', align_corners=False)
+                occ1 = F.interpolate(occ1, scale_factor=2, mode='bilinear', align_corners=False)
 
         if self.upsample_output:
-            # flow5 = F.upsample(flow5, scale_factor=32, mode='bilinear', align_corners=False)
-            # flow4 = F.upsample(flow4, scale_factor=16, mode='bilinear', align_corners=False)
-            # flow3 = F.upsample(flow3, scale_factor=8, mode='bilinear', align_corners=False)
+            # flow5 = F.interpolate(flow5, scale_factor=32, mode='bilinear', align_corners=False)
+            # flow4 = F.interpolate(flow4, scale_factor=16, mode='bilinear', align_corners=False)
+            # flow3 = F.interpolate(flow3, scale_factor=8, mode='bilinear', align_corners=False)
             flow5 = up_flow5
             flow4 = up_flow4
             flow3 = up_flow3
-            flow2 = F.upsample(flow2, scale_factor=4, mode='bilinear', align_corners=False)
+            flow2 = F.interpolate(flow2, scale_factor=4, mode='bilinear', align_corners=False)
             if self.pred_occ:
-                occ5 = F.upsample(occ5, scale_factor=2, mode='bilinear', align_corners=False)
-                occ4 = F.upsample(occ4, scale_factor=2, mode='bilinear', align_corners=False)
-                occ3 = F.upsample(occ3, scale_factor=2, mode='bilinear', align_corners=False)
-                occ2 = F.upsample(occ2, scale_factor=4, mode='bilinear', align_corners=False)
+                occ5 = F.interpolate(occ5, scale_factor=2, mode='bilinear', align_corners=False)
+                occ4 = F.interpolate(occ4, scale_factor=2, mode='bilinear', align_corners=False)
+                occ3 = F.interpolate(occ3, scale_factor=2, mode='bilinear', align_corners=False)
+                occ2 = F.interpolate(occ2, scale_factor=4, mode='bilinear', align_corners=False)
 
         flow_output = (flow2, flow3, flow4, flow5)
         occ_output = ()

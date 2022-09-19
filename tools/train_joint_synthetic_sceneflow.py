@@ -285,7 +285,7 @@ def test_flow(model, batch_data, criteria, work_mode, upsample_factor=4):
 		else:
 			flow_occ_loss = torch.FloatTensor([0]).cuda()
 		loss = flow_loss + flow_occ_loss
-		flow_pred = F.upsample(
+		flow_pred = F.interpolate(
 			output[0][0],
 			scale_factor=upsample_factor,
 			mode='bilinear',
@@ -294,7 +294,7 @@ def test_flow(model, batch_data, criteria, work_mode, upsample_factor=4):
 		flow_pred = torch.squeeze(flow_pred.data.cpu())
 
 	if flow_occ_crit is not None:
-		pred_occ = F.upsample(
+		pred_occ = F.interpolate(
 			output[1][0], 
 			scale_factor=upsample_factor,
 			mode='bilinear',

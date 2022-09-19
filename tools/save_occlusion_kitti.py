@@ -124,8 +124,8 @@ def check_flow_prediction(model, cur_im_path, nxt_im_path, args):
 		flow_pred, _, _ = model(cur_im, nxt_im)
 
 	if not args.upsample_flow_output:
-		flow = F.upsample(flow_pred[0][0] * args.div_flow, scale_factor=4, mode='bilinear')
-		flow_occ = F.upsample(flow_pred[1][0], scale_factor=4, mode='bilinear')
+		flow = F.interpolate(flow_pred[0][0] * args.div_flow, scale_factor=4, mode='bilinear')
+		flow_occ = F.interpolate(flow_pred[1][0], scale_factor=4, mode='bilinear')
 	else:
 		flow = flow_pred[0][0] * args.div_flow
 		flow_occ = flow_pred[1][0]

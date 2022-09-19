@@ -198,8 +198,8 @@ def process_single_data(model, im_paths, args):
 			seg_size=cur_left_im.shape[2:]
 		)
 	if not args.upsample_flow_output:
-		flow = F.upsample(flow_pred[0][0] * args.div_flow, scale_factor=4, mode='bilinear')
-		flow_occ = F.upsample(flow_pred[1][0], scale_factor=4, mode='bilinear')
+		flow = F.interpolate(flow_pred[0][0] * args.div_flow, scale_factor=4, mode='bilinear')
+		flow_occ = F.interpolate(flow_pred[1][0], scale_factor=4, mode='bilinear')
 	else:
 		flow = flow_pred[0][0] * args.div_flow
 		flow_occ = flow_pred[1][0]

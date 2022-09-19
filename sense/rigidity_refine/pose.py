@@ -32,11 +32,11 @@ def flow2pose_least_square(invD0_np, invD1_np, fw_flow_np, K_mat, mask):
     # Hs, Ws = 128, 256
     # fx_s, fy_s = float(Ws) / W, float(Hs) / H
 
-    d0 = torch.from_numpy(invD0_np).cuda().view(1,1,H,W)
-    d1 = torch.from_numpy(invD1_np).cuda().view(1,1,H,W)
-    fw_flow = torch.from_numpy(fw_flow_np.transpose(2,0,1)).cuda().view(1,2,H,W)
-    K   =torch.FloatTensor([K_mat[0,0], K_mat[1,1], K_mat[0,2], K_mat[1,2]]).cuda().view(1,4)
-    weight = torch.from_numpy(mask.astype(int)).view(1,1,H,W).type_as(d0)
+    d0 = torch.from_numpy(invD0_np).cuda().reshape(1,1,H,W)
+    d1 = torch.from_numpy(invD1_np).cuda().reshape(1,1,H,W)
+    fw_flow = torch.from_numpy(fw_flow_np.transpose(2,0,1)).cuda().reshape(1,2,H,W)
+    K   =torch.FloatTensor([K_mat[0,0], K_mat[1,1], K_mat[0,2], K_mat[1,2]]).cuda().reshape(1,4)
+    weight = torch.from_numpy(mask.astype(int)).reshape(1,1,H,W).type_as(d0)
 
     R0 = torch.eye(3,dtype=torch.float).expand(1,3,3).type_as(d0)
     t0 = torch.zeros(1,3,1,dtype=torch.float).type_as(d1)
@@ -64,7 +64,7 @@ def flow2pose_least_square(invD0_np, invD1_np, fw_flow_np, K_mat, mask):
     flow_est = torch.cat((d_u, d_v), dim=1)
     flow_background_refined = flow_est[0].cpu().numpy().transpose(1,2,0)
 
-    inv_depth_warped = inv_z.view(H,W).cpu().numpy()
+    inv_depth_warped = inv_z.reshape(H,W).cpu().numpy()
 
     R, t = pose
 
@@ -84,12 +84,12 @@ def least_square(pose, d0, d1, flow0to1, K, weight, timers=None):
 
     px, py, pu, pv = geometry.generate_xy_grid(B,H,W,K)
 
-    fu = flow0to1[:,0].view(B,-1,1)
-    fv = flow0to1[:,1].view(B,-1,1)
+    fu = flow0to1[:,0].reshape(B,-1,1)
+    fv = flow0to1[:,1].reshape(B,-1,1)
 
     # check forward-backward geometry consitency
-    u1 = flow0to1[:,0].view(B,1,H,W) + pu
-    v1 = flow0to1[:,1].view(B,1,H,W) + pv
+    u1 = flow0to1[:,0].reshape(B,1,H,W) + pu
+    v1 = flow0to1[:,1].reshape(B,1,H,W) + pv
     d1to0 = geometry.warp_features(d1, u1, v1)
     depth0 = 1.0/(1e-8+d0.clamp(1.25e-2, 10))
     depth1 = 1.0/(1e-8+d1.clamp(1.25e-2, 10))
@@ -97,12 +97,12 @@ def least_square(pose, d0, d1, flow0to1, K, weight, timers=None):
     
     # do not process all information, which makes the process faster
     inlier = (weight > 0) * (d0 > 1e-2) * (depth_weight > 0.25)
-    inlier = inlier.view(B,-1,1) 
+    inlier = inlier.reshape(B,-1,1)
     total_num = inlier.sum().float()
 
-    W_mat = (depth_weight).view(B,-1,1)
-    W_u = W_mat[inlier].view(B,-1,1)
-    W_v = W_mat[inlier].view(B,-1,1)
+    W_mat = (depth_weight).reshape(B,-1,1)
+    W_u = W_mat[inlier].reshape(B,-1,1)
+    W_v = W_mat[inlier].reshape(B,-1,1)
 
     Jx_p, Jy_p = compute_jacobian_warping(d0, K, px, py)
 
@@ -126,11 +126,11 @@ def least_square(pose, d0, d1, flow0to1, K, weight, timers=None):
         if timers: timers.toc('Warping')
 
         if timers: timers.tic('construct Ax = b')
-        r_u = fu - d_u.view(B,-1,1) 
-        r_v = fv - d_v.view(B,-1,1)
+        r_u = fu - d_u.reshape(B,-1,1)
+        r_v = fv - d_v.reshape(B,-1,1)
 
-        r_u = r_u[inlier].view(B,-1,1)
-        r_v = r_v[inlier].view(B,-1,1)
+        r_u = r_u[inlier].reshape(B,-1,1)
+        r_v = r_v[inlier].reshape(B,-1,1)
 
         Jtx = torch.transpose(Jx,1,2)
         Jty = torch.transpose(Jy,1,2)
@@ -165,7 +165,7 @@ def least_square(pose, d0, d1, flow0to1, K, weight, timers=None):
 
         if timers: timers.tic('solve x=A^{-1}b')
         xi = torch.bmm(invH, Rhs)   
-        d_R = geometry.batch_twist2Mat(xi[:, :3].view(-1,3))
+        d_R = geometry.batch_twist2Mat(xi[:, :3].reshape(-1,3))
         d_t = xi[:, 3:]
         R, t = pose
         pose = geometry.batch_Rt_compose(R, t, d_R, d_t) 
@@ -188,9 +188,9 @@ def compute_jacobian_warping(p_invdepth, K, px, py):
     B, C, H, W = p_invdepth.size()
     assert(C == 1)
 
-    x = px.view(B, -1, 1)
-    y = py.view(B, -1, 1)
-    invd = p_invdepth.view(B, -1, 1)
+    x = px.reshape(B, -1, 1)
+    y = py.reshape(B, -1, 1)
+    invd = p_invdepth.reshape(B, -1, 1)
 
     xy = x * y
     O = torch.zeros((B, H*W, 1)).type_as(p_invdepth)
@@ -202,7 +202,7 @@ def compute_jacobian_warping(p_invdepth, K, px, py):
 
     fx, fy, cx, cy = torch.split(K, 1, dim=1)
 
-    return dx_dp*fx.view(B,1,1), dy_dp*fy.view(B,1,1)
+    return dx_dp*fx.reshape(B,1,1), dy_dp*fy.reshape(B,1,1)
 
 def invert_Hessian(H):
     """ Generate (H+damp)^{-1}, with predicted damping values

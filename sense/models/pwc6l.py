@@ -160,9 +160,9 @@ class PWC6LFlowDecoder(nn.Module):
         vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:]/max(H-1,1)-1.0
 
         vgrid = vgrid.permute(0,2,3,1)        
-        output = nn.functional.grid_sample(x, vgrid)
+        output = nn.functional.grid_sample(x, vgrid, align_corners=True)
         mask = torch.autograd.Variable(torch.ones(x.size())).cuda()
-        mask = nn.functional.grid_sample(mask, vgrid)
+        mask = nn.functional.grid_sample(mask, vgrid, align_corners=True)
 
         # if W==128:
             # np.save('mask.npy', mask.cpu().data.numpy())
@@ -367,7 +367,7 @@ class PWC6LDispDecoder(nn.Module):
         vgrid[:,0,:,:] = 2.0*(vgrid[:,0,:,:]-disp[:,0,:,:])/max(W-1,1)-1.0
         vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:]/max(H-1,1)-1.0
 
-        return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1))
+        return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1), align_corners=True)
 
     def forward(self, x1, x2):
         c11, c12, c13, c14, c15, c16 = x1
@@ -438,11 +438,11 @@ class PWC6LDispDecoder(nn.Module):
         x = self.disp_dc_conv4(self.disp_dc_conv3(self.disp_dc_conv2(self.disp_dc_conv1(x))))
         depth2 += self.disp_dc_conv7(self.disp_dc_conv6(self.disp_dc_conv5(x)))
 
-        depth2 = F.upsample(depth2, scale_factor=4, mode='bilinear', align_corners=False)
-        depth3 = F.upsample(depth3, scale_factor=4, mode='bilinear', align_corners=False)
-        depth4 = F.upsample(depth4, scale_factor=4, mode='bilinear', align_corners=False)
-        depth5 = F.upsample(depth5, scale_factor=4, mode='bilinear', align_corners=False)
-        depth6 = F.upsample(depth6, scale_factor=4, mode='bilinear', align_corners=False)
+        depth2 = F.interpolate(depth2, scale_factor=4, mode='bilinear', align_corners=False)
+        depth3 = F.interpolate(depth3, scale_factor=4, mode='bilinear', align_corners=False)
+        depth4 = F.interpolate(depth4, scale_factor=4, mode='bilinear', align_corners=False)
+        depth5 = F.interpolate(depth5, scale_factor=4, mode='bilinear', align_corners=False)
+        depth6 = F.interpolate(depth6, scale_factor=4, mode='bilinear', align_corners=False)
 
         depth2 = torch.squeeze(depth2, 1)
         depth3 = torch.squeeze(depth3, 1)

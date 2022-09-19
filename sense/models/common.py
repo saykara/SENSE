@@ -176,7 +176,7 @@ class PPM(nn.Module):
         input_size = conv5.size()
         ppm_out = [conv5]
         for pool_scale, pool_conv in zip(self.ppm_pooling, self.ppm_conv):
-            ppm_out.append(pool_conv(F.upsample(
+            ppm_out.append(pool_conv(F.interpolate(
                 pool_scale(conv5),
                 (input_size[2], input_size[3]),
                 mode='bilinear', align_corners=False
@@ -230,9 +230,9 @@ def flow_warp(x, flo):
     vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:]/max(H-1,1)-1.0
 
     vgrid = vgrid.permute(0,2,3,1)        
-    output = nn.functional.grid_sample(x, vgrid)
+    output = nn.functional.grid_sample(x, vgrid, align_corners=True)
     mask = torch.ones(x.size()).cuda()
-    mask = nn.functional.grid_sample(mask, vgrid)
+    mask = nn.functional.grid_sample(mask, vgrid, align_corners=True)
 
     # if W==128:
         # np.save('mask.npy', mask.cpu().data.numpy())
@@ -272,4 +272,4 @@ def disp_warp(rim, disp):
     vgrid[:,0,:,:] = 2.0*(vgrid[:,0,:,:]-disp[:,0,:,:])/max(W-1,1)-1.0
     vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:]/max(H-1,1)-1.0
 
-    return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1))
+    return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1), align_corners=True)
