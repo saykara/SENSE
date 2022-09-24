@@ -178,7 +178,8 @@ def main(args):
 	#     pin_memory=False
 	# )
 
-	kitti_dir = '/home/utku/Thesis/KITTI_scene_flow'
+	kitti_dir =os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'KITTI_scene_flow')
+
 	all_im_paths = make_kitti2015_paths(kitti_dir, args.split)
 	print('{} samples found for {}.'.format(len(all_im_paths), args.split))
 

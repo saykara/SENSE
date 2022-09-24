@@ -312,7 +312,7 @@ def make_flow_disp_data(base_dir, flow_thresh=500, disp_thresh=500, merge_crit='
     return train_data, test_data
 
 if __name__ == '__main__':
-    base_dir = '/home/hzjiang/Data/SceneFlow/FlyingThings3D_subset'
+    base_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'SceneFlow/FlyingThings3D_subset')
     
     print('scene flow')
     joint_train_data, joint_test_data = make_flow_disp_data(base_dir)

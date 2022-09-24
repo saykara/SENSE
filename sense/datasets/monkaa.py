@@ -128,7 +128,7 @@ def make_flow_disp_data(base_dir, flow_thresh=500, disp_thresh=500, merge_crit='
 	return train_data, ([], [])
 
 if __name__ == '__main__':
-	base_dir = '/home/hzjiang/workspace/Data/SceneFlow/Monkaa'
+	base_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'SceneFlow/Monkaa')
 
 	print('scene flow')
 	joint_train_data, joint_test_data = make_flow_disp_data(base_dir)

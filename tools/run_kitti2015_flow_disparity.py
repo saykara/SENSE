@@ -247,8 +247,8 @@ def main(args):
 	model.load_state_dict(state_dict)
 	model.eval()
 	print('==> Successfully loaded a model {}.'.format(args.loadmodel))
-
-	path_list = make_kitti2015_paths(args.kitti_dir, args.split)
+	dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', args.kitti_dir)
+	path_list = make_kitti2015_paths(dir, args.split)
 
 	args.stride = 32
 	for i in tqdm(range(len(path_list))):
