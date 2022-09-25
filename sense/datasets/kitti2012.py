@@ -139,6 +139,6 @@ def make_flow_disp_dataset(kitti_dir, split_id=1, pseudo_gt_dir=None):
 	return train_data, test_data
 
 if __name__ == '__main__':
-	kitti2012_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'KITTI_Stereo_2012')
+	kitti2012_dir = os.path.join('/content/drive/My Drive/Thesis', 'KITTI_Stereo_2012')
 	train_data, test_data = make_flow_disp_dataset(kitti2012_dir)
 	print(len(train_data), len(test_data))

@@ -15,11 +15,11 @@ import sense.datasets.kitti2012 as kitti2012
 import sense.datasets.sintel as sintel
 
 FLYINGTHINGS3D_DIR= os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'SceneFlow/FlyingThings3D_subset')
-MONKAA_DIR=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'SceneFlow/Monkaa')
-DRIVING_DIR=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'SceneFlow/Driving')
-SINTEL_DIR=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'MPI_Sintel')
-KITTI2012_DIR=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'KITTI_Stereo_2012')
-KITTI2015_DIR=os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'KITTI_scene_flow')
+MONKAA_DIR=os.path.join('/content/drive/My Drive/Thesis', 'SceneFlow/Monkaa')
+DRIVING_DIR=os.path.join('/content/drive/My Drive/Thesis', 'SceneFlow/Driving')
+SINTEL_DIR=os.path.join('/content/drive/My Drive/Thesis', 'MPI_Sintel')
+KITTI2012_DIR=os.path.join('/content/drive/My Drive/Thesis', 'KITTI_Stereo_2012')
+KITTI2015_DIR=os.path.join('/content/drive/My Drive/Thesis', 'KITTI_scene_flow')
 
 def make_warp_disp_refine_data(dataset_name):
 	cache_file_path = 'cache/wdisp_refine_{}.pkl'.format(dataset_name)

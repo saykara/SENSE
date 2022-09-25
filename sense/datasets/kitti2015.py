@@ -210,6 +210,6 @@ def make_custom_sceneflow_dataset(kitti_dir, split_id=-1):
 	return train_data, test_data
 
 if __name__ == '__main__':
-	kitti_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..', 'KITTI_scene_flow')
+	kitti_dir = os.path.join('/content/drive/My Drive/Thesis', 'KITTI_scene_flow')
 	train_data, test_data = make_custom_disparity_dataset(kitti_dir, -1)
 	print(train_data[-1])

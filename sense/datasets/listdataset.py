@@ -5,7 +5,6 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 import torch.utils.data as data
 import os
 import os.path
-from scipy.ndimage import imread
 import numpy as np
 import pdb
 import time
