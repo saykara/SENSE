@@ -22,11 +22,8 @@ class BasicBlock(nn.Module):
 
         self.conv1 = dwconvbn(inplanes, planes, kernel_size, stride, pad, dilation, bn_type=bn_type)
 
-        self.conv2 = nn.Sequential(
-                        conv(in_planes=planes, out_planes=planes, kernel_size=1, stride=1, 
-                               padding=0, dilation=dilation),
-                        make_bn_layer(bn_type, planes)
-                        )
+        self.conv2 = conv(in_planes=planes, out_planes=planes, kernel_size=1, stride=1, 
+                       padding=0, dilation=dilation)
 
         self.downsample = downsample
         self.stride = stride
