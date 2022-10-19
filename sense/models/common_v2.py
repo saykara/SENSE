@@ -25,6 +25,8 @@ def make_bn_layer(bn_type, plane):
         import encoding
         import encoding.nn
         return encoding.nn.BatchNorm2d(plane)
+    elif bn_type == 'layer':
+        return nn.LayerNorm(plane)
     else:
         raise Exception('Not supported BN type: {}.'.format(bn_type))
     
