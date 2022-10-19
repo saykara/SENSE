@@ -68,9 +68,9 @@ class PSMNextEncoder(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
+                make_bn_layer(bn_type, self.inplanes),
                 conv(in_planes=self.inplanes, out_planes=planes * block.expansion, 
-                       kernel_size=1, stride=stride, padding=0, bias=False),
-                make_bn_layer(bn_type, planes * block.expansion),)
+                       kernel_size=2, stride=stride, padding=0, bias=False))
 
         layers = []
         layers.append(block(self.inplanes, planes, kernel_size, stride, downsample, pad, dilation, bn_type))
