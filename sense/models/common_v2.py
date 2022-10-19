@@ -11,6 +11,10 @@ def dwconv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1
     return nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding, 
                      dilation=dilation, bias=bias, groups=in_planes)
 
+def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True):
+    return nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding, 
+                     dilation=dilation, bias=bias, groups=1)
+
 def make_bn_layer(bn_type, plane):
     if bn_type == 'plain':
         return nn.BatchNorm2d(plane)

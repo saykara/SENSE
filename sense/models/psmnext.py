@@ -20,11 +20,11 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, kernel_size, stride, downsample, pad, dilation, bn_type):
         super(BasicBlock, self).__init__()
 
-        self.conv1 = convbn(inplanes, planes, kernel_size, stride, pad, dilation, bn_type=bn_type)
+        self.conv1 = dwconvbn(inplanes, planes, kernel_size, stride, pad, dilation, bn_type=bn_type)
 
         self.conv2 = nn.Sequential(
-                        dwconv(in_planes=planes, out_planes=planes, kernel_size=kernel_size, stride=1, 
-                               padding=pad, dilation=dilation),
+                        conv(in_planes=planes, out_planes=planes, kernel_size=1, stride=1, 
+                               padding=0, dilation=dilation),
                         make_bn_layer(bn_type, planes)
                         )
 
@@ -50,7 +50,7 @@ class PSMNextEncoder(nn.Module):
         self.firstconv = nn.Sequential(
                         convbn(3,  32, kernel_size, 2, pad, 1, bn_type=bn_type),
                         dwconvbn(32, 32, kernel_size, 1, pad, 1, bn_type=bn_type),
-                        dwconvbn(32, 32, kernel_size, 1, pad, 1, bn_type=bn_type)
+                        convbn(32, 32, 1, 1, 0, 1, bn_type=bn_type)
                         )
         self.layer1 = self._make_layer(BasicBlock, 32, 3, kernel_size, 2,pad,1, bn_type)
         self.layer2 = self._make_layer(BasicBlock, 64, 16, kernel_size, 2,pad,1, bn_type) 
@@ -71,7 +71,7 @@ class PSMNextEncoder(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                dwconv(in_planes=self.inplanes, out_planes=planes * block.expansion, 
+                conv(in_planes=self.inplanes, out_planes=planes * block.expansion, 
                        kernel_size=1, stride=stride, padding=0, bias=False),
                 make_bn_layer(bn_type, planes * block.expansion),)
 
