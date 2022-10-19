@@ -232,7 +232,7 @@ def test_disp(model, batch_data, criteria, work_mode):
 			disp_occ_loss = torch.FloatTensor([0]).cuda()
 		loss = disp_loss + disp_occ_loss
 	pred_disp = torch.squeeze(output[0][0].detach().cpu())
-	disp_gt = torch.squeeze(disp_gt.detach())
+	disp_gt = torch.squeeze(disp_gt.detach().cpu())
 
 	if disp_occ_crit is not None:
 		pred_occ = torch.squeeze(output[1][0].detach().cpu())
@@ -243,7 +243,7 @@ def test_disp(model, batch_data, criteria, work_mode):
 		occ_acc = -1
 
 	#computing 3-px error#
-	pred_err = np.abs(pred_disp - disp_gt.cpu())
+	pred_err = np.abs(pred_disp - disp_gt)
 	if work_mode == 'pre-train':
 		valid_condition = disp_gt < args.maxdisp
 	else:
