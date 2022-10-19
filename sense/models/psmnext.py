@@ -13,7 +13,7 @@ import numpy as np
 
 from sense.lib.nn import SynchronizedBatchNorm2d
 
-from .common import *
+from .common_v2 import *
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -23,7 +23,8 @@ class BasicBlock(nn.Module):
         self.conv1 = convbn(inplanes, planes, 3, stride, pad, dilation, bn_type=bn_type)
 
         self.conv2 = nn.Sequential(
-                        nn.Conv2d(planes, planes, 3, 1, pad, dilation),
+                        dwconv(in_planes=planes, out_planes=planes, kernel_size=3, stride=1, 
+                               padding=pad, dilation=dilation),
                         make_bn_layer(bn_type, planes)
                         )
 
@@ -41,15 +42,15 @@ class BasicBlock(nn.Module):
 
         return out
 
-class PSMEncoder(nn.Module):
+class PSMNextEncoder(nn.Module):
     def __init__(self, bn_type, with_ppm=False):
-        super(PSMEncoder, self).__init__()
+        super(PSMNextEncoder, self).__init__()
         self.inplanes = 32
         self.firstconv = nn.Sequential(
-                            convbn(3,  32, 3, 2, 1, 1, bn_type=bn_type),
-                            convbn(32, 32, 3, 1, 1, 1, bn_type=bn_type),
-                            convbn(32, 32, 3, 1, 1, 1, bn_type=bn_type)
-                            )
+                        convbn(3,  32, 3, 2, 1, 1, bn_type=bn_type),
+                        dwconvbn(32, 32, 3, 1, 1, 1, bn_type=bn_type),
+                        dwconvbn(32, 32, 3, 1, 1, 1, bn_type=bn_type)
+                        )
 
         self.layer1 = self._make_layer(BasicBlock, 32, 3, 2,1,1, bn_type)
         self.layer2 = self._make_layer(BasicBlock, 64, 16, 2,1,1, bn_type) 
@@ -69,9 +70,9 @@ class PSMEncoder(nn.Module):
     def _make_layer(self, block, planes, blocks, stride, pad, dilation, bn_type):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-           downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+            downsample = nn.Sequential(
+                dwconv(in_planes=self.inplanes, out_planes=planes * block.expansion, 
+                       kernel_size=1, stride=stride, padding=0, bias=False),
                 make_bn_layer(bn_type, planes * block.expansion),)
 
         layers = []
@@ -97,7 +98,7 @@ class PSMEncoder(nn.Module):
         return [output1, output2, output3, output4, output5, output5_2]
 
 if __name__ == '__main__':
-    enc = PSMEncoder('plain')
+    enc = PSMNextEncoder('plain')
     for n, m in enc.named_modules():
         if isinstance(m, SynchronizedBatchNorm2d):
             print(n)

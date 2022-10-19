@@ -13,6 +13,7 @@ from .pwc import PWCEncoder, PWCFlowDecoder, PWCDispDecoder
 from .psmnet import PSMEncoder
 from .upernet import UPerNetLight
 from .loss import multiscaleloss
+from .psmnext import PSMNextEncoder
 
 from sense.lib.nn import DataParallelWithCallback
 
@@ -30,6 +31,10 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 		num_channels = [16, 32, 64, 96, 128, 196]
 	elif args.enc_arch == 'psm':
 		enc = PSMEncoder(args.bn_type, with_ppm)
+		num_channels = [32, 32, 64, 128, 128]
+		num_channels = [32, 32, 64, 128, 128]
+	elif args.enc_arch == 'psmnext':
+		enc = PSMNextEncoder(args.bn_type, with_ppm)
 		num_channels = [32, 32, 64, 128, 128]
 		num_channels = [32, 32, 64, 128, 128]
 	else:
