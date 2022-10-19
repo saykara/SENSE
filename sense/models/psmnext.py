@@ -17,13 +17,13 @@ from .common_v2 import *
 
 class BasicBlock(nn.Module):
     expansion = 1
-    def __init__(self, inplanes, planes, stride, downsample, pad, dilation, bn_type):
+    def __init__(self, inplanes, planes, kernel_size, stride, downsample, pad, dilation, bn_type):
         super(BasicBlock, self).__init__()
 
-        self.conv1 = convbn(inplanes, planes, 3, stride, pad, dilation, bn_type=bn_type)
+        self.conv1 = convbn(inplanes, planes, kernel_size, stride, pad, dilation, bn_type=bn_type)
 
         self.conv2 = nn.Sequential(
-                        dwconv(in_planes=planes, out_planes=planes, kernel_size=3, stride=1, 
+                        dwconv(in_planes=planes, out_planes=planes, kernel_size=kernel_size, stride=1, 
                                padding=pad, dilation=dilation),
                         make_bn_layer(bn_type, planes)
                         )
@@ -43,19 +43,19 @@ class BasicBlock(nn.Module):
         return out
 
 class PSMNextEncoder(nn.Module):
-    def __init__(self, bn_type, with_ppm=False):
+    def __init__(self, bn_type, kernel_size=3, with_ppm=False):
         super(PSMNextEncoder, self).__init__()
         self.inplanes = 32
+        pad = (int)((kernel_size - 1) / 2)
         self.firstconv = nn.Sequential(
-                        convbn(3,  32, 3, 2, 1, 1, bn_type=bn_type),
-                        dwconvbn(32, 32, 3, 1, 1, 1, bn_type=bn_type),
-                        dwconvbn(32, 32, 3, 1, 1, 1, bn_type=bn_type)
+                        convbn(3,  32, kernel_size, 2, pad, 1, bn_type=bn_type),
+                        dwconvbn(32, 32, kernel_size, 1, pad, 1, bn_type=bn_type),
+                        dwconvbn(32, 32, kernel_size, 1, pad, 1, bn_type=bn_type)
                         )
-
-        self.layer1 = self._make_layer(BasicBlock, 32, 3, 2,1,1, bn_type)
-        self.layer2 = self._make_layer(BasicBlock, 64, 16, 2,1,1, bn_type) 
-        self.layer3 = self._make_layer(BasicBlock, 128, 3, 2,1,1, bn_type)
-        self.layer4 = self._make_layer(BasicBlock, 128, 3, 2,1,1, bn_type)
+        self.layer1 = self._make_layer(BasicBlock, 32, 3, kernel_size, 2,pad,1, bn_type)
+        self.layer2 = self._make_layer(BasicBlock, 64, 16, kernel_size, 2,pad,1, bn_type) 
+        self.layer3 = self._make_layer(BasicBlock, 128, 3, kernel_size, 2,pad,1, bn_type)
+        self.layer4 = self._make_layer(BasicBlock, 128, 3, kernel_size, 2,pad,1, bn_type)
 
         if with_ppm:
             self.ppm = PPM(
@@ -67,7 +67,7 @@ class PSMNextEncoder(nn.Module):
         else:
             self.ppm = None
 
-    def _make_layer(self, block, planes, blocks, stride, pad, dilation, bn_type):
+    def _make_layer(self, block, planes, blocks, kernel_size, stride, pad, dilation, bn_type):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -76,10 +76,10 @@ class PSMNextEncoder(nn.Module):
                 make_bn_layer(bn_type, planes * block.expansion),)
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, pad, dilation, bn_type))
+        layers.append(block(self.inplanes, planes, kernel_size, stride, downsample, pad, dilation, bn_type))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, 1, None, pad, dilation, bn_type))
+            layers.append(block(self.inplanes, planes, kernel_size, 1, None, pad, dilation, bn_type))
 
         return nn.Sequential(*layers)
 

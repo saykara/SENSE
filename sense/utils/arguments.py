@@ -148,4 +148,6 @@ def parse_args():
 						help='penalty for the loss value in the occlusion area.')
 	parser.add_argument('--disp-occ-penalty', default=-1, type=float,
 						help='penalty for the loss value in the occlusion area.')
+	parser.add_argument('--kernel-size', default=3, type=int,
+						help='filter size of convolution.')
 	return parser
