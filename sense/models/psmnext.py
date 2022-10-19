@@ -50,7 +50,7 @@ class PSMNextEncoder(nn.Module):
         self.firstconv = nn.Sequential(
                         convbn(3,  32, kernel_size, 2, pad, 1, bn_type=bn_type),
                         dwconvbn(32, 32, kernel_size, 1, pad, 1, bn_type=bn_type),
-                        convbn(32, 32, 1, 1, 0, 1, bn_type=bn_type)
+                        conv(32, 32, 1, 1, 0, 1)
                         )
         self.layer1 = self._make_layer(BasicBlock, 32, 3, kernel_size, 2,pad,1, bn_type)
         self.layer2 = self._make_layer(BasicBlock, 64, 16, kernel_size, 2,pad,1, bn_type) 
