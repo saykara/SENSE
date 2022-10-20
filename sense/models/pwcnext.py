@@ -13,11 +13,11 @@ from torch.autograd import Variable
 # from lib.correlation_package.modules.corr import Correlation, Correlation1d
 # from sense.lib.correlation import correlation
 from sense.lib.correlation_package.correlation import Correlation
-from .common import *
+from .common_v2 import *
 
-class PWCEncoder(nn.Module):
+class PWCNextEncoder(nn.Module):
     def __init__(self, bn_type, with_ppm):
-        super(PWCEncoder, self).__init__()
+        super(PWCNextEncoder, self).__init__()
         self.conv1a  = convbn(3,   16, kernel_size=3, stride=2, bn_type=bn_type)
         self.conv1b  = convbn(16,  16, kernel_size=3, stride=1, bn_type=bn_type)
         self.conv2a  = convbn(16,  32, kernel_size=3, stride=2, bn_type=bn_type)
@@ -76,16 +76,17 @@ class Correlation1d(nn.Module):
         cost = cost[:, c * (2 * c + 1):(c + 1) * (2 * c + 1), :, :].contiguous()
         return cost
 
-class PWCDispDecoder(nn.Module):
+class PWCNextDispDecoder(nn.Module):
     def __init__(self, md=4, maxdisp=192, 
             encoder_planes=[16, 32, 64, 96, 128], 
             do_class=False,
             pred_occ=False,
             refinement_module='none',
             bn_type='plain',
-            cat_occ=False
+            cat_occ=False,
+            kernel_size=3
         ):
-        super(PWCDispDecoder, self).__init__()
+        super(PWCNextDispDecoder, self).__init__()
 
         self.pred_occ = pred_occ
         self.cat_occ = cat_occ
@@ -100,7 +101,7 @@ class PWCDispDecoder(nn.Module):
             corr_multiply=1
         )
         # self.disp_corr = Correlation1d()
-
+        pad = (int)((kernel_size - 1) / 2)
         self.disp_reg = disparityregression(maxdisp)
         self.do_class = do_class
 
@@ -109,11 +110,11 @@ class PWCDispDecoder(nn.Module):
         dd = np.cumsum(encoder_planes).tolist()
         
         od = nd
-        self.disp_conv5_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv5_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv5_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv5_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv5_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.disp_conv5_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv5_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv5_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv5_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv5_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         if do_class:
             self.predict_depth5 = predict_class(od+dd[4]) 
         else:
@@ -126,11 +127,11 @@ class PWCDispDecoder(nn.Module):
         od = nd+encoder_planes[3]+2
         if pred_occ and cat_occ:
             od += 2
-        self.disp_conv4_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv4_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv4_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv4_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv4_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.disp_conv4_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv4_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv4_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv4_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv4_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         if do_class:
             self.predict_depth4 = predict_class(od+dd[4]) 
         else:
@@ -143,11 +144,11 @@ class PWCDispDecoder(nn.Module):
         od = nd+encoder_planes[2]+2
         if pred_occ and cat_occ:
             od += 2
-        self.disp_conv3_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv3_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv3_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv3_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv3_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.disp_conv3_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv3_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv3_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv3_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv3_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         if do_class:
             self.predict_depth3 = predict_class(od+dd[4]) 
         else:
@@ -160,11 +161,11 @@ class PWCDispDecoder(nn.Module):
         od = nd+encoder_planes[1]+2
         if pred_occ and cat_occ:
             od += 2
-        self.disp_conv2_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv2_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv2_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv2_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.disp_conv2_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.disp_conv2_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv2_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv2_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv2_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv2_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         if do_class:
             self.predict_depth2 = predict_class(od+dd[4])
         else:
@@ -351,16 +352,17 @@ class PWCDispDecoder(nn.Module):
                 occ_output = (occ1, occ2, occ3, occ4, occ5)
         return (disp_output, occ_output)
 
-class PWCFlowDecoder(nn.Module):
+class PWCNextFlowDecoder(nn.Module):
     def __init__(self, md=4,
             encoder_planes=[16, 32, 64, 96, 128], 
             refinement_module='none',
             bn_type='plain',
             pred_occ=False,
             cat_occ=False,
-            upsample_output=False
+            upsample_output=False,
+            kernel_size=3
         ):
-        super(PWCFlowDecoder, self).__init__()
+        super(PWCNextFlowDecoder, self).__init__()
         self.pred_occ = pred_occ
         self.cat_occ = cat_occ
         self.upsample_output = upsample_output
@@ -374,17 +376,17 @@ class PWCFlowDecoder(nn.Module):
             corr_multiply=1
         )
         # self.flow_corr = correlation.FunctionCorrelation
-
+        pad = (int)((kernel_size - 1) / 2)
         nd = (2*md+1) ** 2
         # dd = np.cumsum([128,128,96,64,32]).tolist()
         dd = np.cumsum(encoder_planes).tolist()
         
         od = nd
-        self.flow_conv5_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv5_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv5_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv5_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv5_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.flow_conv5_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv5_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv5_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv5_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv5_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         self.predict_flow5 = predict_flow(od+dd[4]) 
         self.flow_deconv5 = deconv(2, 2, kernel_size=4, stride=2, padding=1) 
         self.flow_upfeat5 = deconv(od+dd[4], 2, kernel_size=4, stride=2, padding=1) 
@@ -394,11 +396,11 @@ class PWCFlowDecoder(nn.Module):
         od = nd+encoder_planes[3]+4
         if pred_occ and cat_occ:
             od += 2
-        self.flow_conv4_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv4_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv4_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv4_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv4_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.flow_conv4_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv4_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv4_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv4_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv4_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         self.predict_flow4 = predict_flow(od+dd[4]) 
         self.flow_deconv4 = deconv(2, 2, kernel_size=4, stride=2, padding=1) 
         self.flow_upfeat4 = deconv(od+dd[4], 2, kernel_size=4, stride=2, padding=1) 
@@ -408,11 +410,11 @@ class PWCFlowDecoder(nn.Module):
         od = nd+encoder_planes[2]+4
         if pred_occ and cat_occ:
             od += 2
-        self.flow_conv3_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv3_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv3_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv3_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv3_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.flow_conv3_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv3_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv3_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv3_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv3_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         self.predict_flow3 = predict_flow(od+dd[4]) 
         self.flow_deconv3 = deconv(2, 2, kernel_size=4, stride=2, padding=1) 
         self.flow_upfeat3 = deconv(od+dd[4], 2, kernel_size=4, stride=2, padding=1) 
@@ -422,11 +424,11 @@ class PWCFlowDecoder(nn.Module):
         od = nd+encoder_planes[1]+4
         if pred_occ and cat_occ:
             od += 2
-        self.flow_conv2_0 = convbn(od,      encoder_planes[0], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv2_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv2_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv2_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=3, stride=1, bn_type=bn_type)
-        self.flow_conv2_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=3, stride=1, bn_type=bn_type)
+        self.flow_conv2_0 = convbn(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv2_1 = convbn(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv2_2 = convbn(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv2_3 = convbn(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.flow_conv2_4 = convbn(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
         self.predict_flow2 = predict_flow(od+dd[4])
         if self.pred_occ:
             self.predict_occ2 = predict_class(od+dd[4], 2)
