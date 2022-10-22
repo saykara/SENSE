@@ -14,7 +14,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --workers 16 \
+   --workers 4 \
    --lr 0.001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \

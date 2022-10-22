@@ -280,7 +280,7 @@ def make_custom_flow_disp_data(data_dir, split_id=1, pass_opt='clean+pass'):
 
 if __name__ == '__main__':
 	train_list, test_list = make_custom_flow_data(
-		os.path.join('/content/drive/My Drive/Thesis', 'MPI_Sintel'),
+		os.path.join('/content/bucket-data', 'MPI_Sintel'),
 		pass_opt='clean+final'
 	)
 	print(len(train_list))
