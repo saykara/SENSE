@@ -66,7 +66,7 @@ def load_pfm(filename):
 def load_flo(path):
     with open(path, 'rb') as f:
         magic = np.fromfile(f, np.float32, count=1)
-        assert(202021.25 == magic),'Magic number incorrect. Invalid .flo file'
+        assert(202021.25 == magic),f'Magic number incorrect. Invalid .flo file => {path}'
         h = np.fromfile(f, np.int32, count=1)[0]
         w = np.fromfile(f, np.int32, count=1)[0]
         data = np.fromfile(f, np.float32, count=2*w*h)
