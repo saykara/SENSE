@@ -20,17 +20,21 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, kernel_size, stride, downsample, pad, dilation, bn_type):
         super(BasicBlock, self).__init__()
 
-        self.conv1 = dwconvbn(inplanes, planes, kernel_size, stride, pad, dilation, bn_type=bn_type)
-
-        self.conv2 = conv(in_planes=planes, out_planes=planes, kernel_size=1, stride=1, 
-                       padding=0, dilation=dilation)
+        self.dwconv = dwconv(inplanes, planes, kernel_size, stride, pad, dilation)
+        self.bn = make_bn_layer(bn_type, planes)
+        self.linear1 = conv(planes, 4 * planes, 1, 1, 0, 1)
+        self.act = nn.GELU()
+        self.linear2 = conv(4 * planes, planes, 1, 1, 0, 1)
 
         self.downsample = downsample
         self.stride = stride
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.conv2(out)
+        out = self.dwconv(x)
+        out = self.bn(out)
+        out = self.linear1(out)
+        out = self.act(out)
+        out = self.linear2(out)
 
         if self.downsample is not None:
             x = self.downsample(x)
@@ -76,7 +80,7 @@ class PSMNextEncoder(nn.Module):
         layers.append(block(self.inplanes, planes, kernel_size, stride, downsample, pad, dilation, bn_type))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, kernel_size, 1, None, pad, dilation, bn_type))
+            layers.append(block(self.inplanes, planes, kernel_size, 1, nn.Dropout2d(p=0.5), pad, dilation, bn_type))
 
         return nn.Sequential(*layers)
 
