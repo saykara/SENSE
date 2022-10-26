@@ -64,7 +64,7 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 									pred_occ=not args.no_occ,
 									cat_occ=args.cat_occ,
 									upsample_output=args.upsample_flow_output,
-         							kernel_size=args.kernel_size)
+         							kernel_size=args.dec_kernel_size)
 		else:
 			raise Exception('Not supported optical flow decoder: {}'.format(args.flow_dec_arch))
 
@@ -89,7 +89,7 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 									bn_type=args.bn_type,
 									pred_occ=not args.no_occ,
 									cat_occ=args.cat_occ,
-         							kernel_size=args.kernel_size)
+         							kernel_size=args.dec_kernel_size)
 		elif args.dec_arch == 'pwcdc2':
 			disp_dec = PWC2DispDecoder(encoder_planes=num_channels,
 									md=args.corr_radius,
