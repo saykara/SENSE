@@ -293,10 +293,10 @@ def disp_warp(rim, disp):
     return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1), align_corners=True)
 
 def make_dec_layer(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn'):
-    return nn.Sequential(
+    return convbn(in_planes, out_planes, 3, 1, 1, 1, bias), nn.Sequential(
         dwconv(in_planes, in_planes, kernel_size, stride, padding, dilation, bias),
         make_bn_layer(bn_type, in_planes),
-        conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True),
+        conv(in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
         nn.GELU(),
         conv(out_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True)
     )
