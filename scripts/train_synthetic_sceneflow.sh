@@ -5,7 +5,7 @@ export PYTHONPATH=./
 RES_DIR=./output/sceneflow
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
-   --dataset sceneflow \
+   --dataset flyingthings3d \
    --enc-arch psm \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
