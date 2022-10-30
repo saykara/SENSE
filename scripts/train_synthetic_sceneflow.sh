@@ -20,7 +20,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --lr-gamma 0.1 \
    --epochs 10 \
    --bn-type syncbn \
-   --batch-size 8 \
+   --batch-size 1 \
    --corr-radius 4  \
    --disp-crop-imh 256 \
    --disp-crop-imw 512 \
