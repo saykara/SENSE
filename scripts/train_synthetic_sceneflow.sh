@@ -6,10 +6,10 @@ RES_DIR=./output/sceneflow
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset flyingthings3d \
-   --enc-arch psm \
-   --dec-arch pwcdc \
+   --enc-arch psmnext \
+   --dec-arch pwcdcnext \
    --disp-refinement hourglass \
-   --flow-dec-arch pwcdc \
+   --flow-dec-arch pwcdcnext \
    --flow-no-ppm \
    --flow-refinement none \
    --maxdisp 192 \
@@ -27,4 +27,6 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-crop-imh 384 \
    --flow-crop-imw 640 \
    --disp-loss-weight 0.25 \
-   --print-freq 20
+   --print-freq 20 \
+   --kernel-size 7 \
+   --dec-kernel-size 7
