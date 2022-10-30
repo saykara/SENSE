@@ -371,7 +371,7 @@ def main(args):
 		sum([p.data.nelement() for p in model.parameters()]))
 	)
 
-	optimizer = optim.Adam(model.parameters(), 
+	optimizer = optim.AdamW(model.parameters(), 
 		lr=args.lr, 
 		betas=(0.9, 0.999),
 		eps=1e-08, 
