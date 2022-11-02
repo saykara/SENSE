@@ -31,28 +31,36 @@ def make_bn_layer(bn_type, plane):
         raise Exception('Not supported BN type: {}.'.format(bn_type))
     
 def dwconvbn(in_planes, out_planes, kernel_size=3, 
-        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', no_relu=False):
+        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', act_type="gelu"):
     layers = []
     layers.append(
         dwconv(in_planes, out_planes, kernel_size=kernel_size, stride=stride, 
                         padding=padding, dilation=dilation, bias=bias)
-    )   
-    layers.append(make_bn_layer(bn_type, out_planes))
-    if not no_relu:
-        layers.append(nn.GELU())
+    )
+    if bn_type is not None:
+        layers.append(make_bn_layer(bn_type, out_planes))
+    if act_type is not None:
+        if act_type is "gelu":
+            layers.append(nn.GELU())
+        elif act_type is "relu":
+            layers.append(nn.ReLU())
     return nn.Sequential(*layers)
 
 def convbn(in_planes, out_planes, kernel_size=3, 
-        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', no_relu=False
+        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', act_type="gelu"
     ):
     layers = []
     layers.append(
         nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, 
                         padding=padding, dilation=dilation, bias=bias)
-    )   
-    layers.append(make_bn_layer(bn_type, out_planes))
-    if not no_relu:
-        layers.append(nn.GELU())
+    )
+    if bn_type is not None:
+        layers.append(make_bn_layer(bn_type, out_planes))
+    if act_type is not None:
+        if act_type is "gelu":
+            layers.append(nn.GELU())
+        elif act_type is "relu":
+            layers.append(nn.ReLU())
     return nn.Sequential(*layers)
 
 
