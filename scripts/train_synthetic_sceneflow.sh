@@ -5,7 +5,7 @@ export PYTHONPATH=./
 RES_DIR=./output/sceneflow
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
-   --dataset sceneflow \
+   --dataset flyingthings3d \
    --enc-arch psm \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
@@ -14,13 +14,13 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --workers 4 \
+   --workers 2 \
    --lr 0.001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
    --epochs 100 \
    --bn-type syncbn \
-   --batch-size 8 \
+   --batch-size 4 \
    --corr-radius 4  \
    --disp-crop-imh 256 \
    --disp-crop-imw 512 \
