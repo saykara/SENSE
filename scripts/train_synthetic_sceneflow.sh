@@ -27,5 +27,4 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-crop-imh 384 \
    --flow-crop-imw 640 \
    --disp-loss-weight 0.25 \
-   --print-freq 20 \
-   --loadmodel None
+   --print-freq 20 
