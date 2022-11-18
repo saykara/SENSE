@@ -40,7 +40,8 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 		num_channels = [32, 32, 64, 128, 128]
 	else:
 		raise Exception('Unsupported encoder architecture: {}'.format(args.enc_arch))
-
+	print("Encoder parameters: ", sum([p.data.nelement() for p in enc.parameters()]))
+ 
 	# decoder
 	flow_dec = None
 	disp_dec = None
@@ -138,6 +139,8 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 									   )
 		else:
 			raise Exception('Not supported decoder {}'.format(args.dec_arch))
+	print("Flow decoder parameters: ", sum([p.data.nelement() for p in flow_dec.parameters()]))
+	print("Disparity decoder parameters: ", sum([p.data.nelement() for p in disp_dec.parameters()]))
 
 	if do_pose:
 		pose_dec = PoseDecoder(encoder_last_plane=num_channels[-1],
