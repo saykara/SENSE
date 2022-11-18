@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=./output/sceneflow
+RES_DIR=/content/drive/MyDrive/Thesis/Model
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset flyingthings3d \
@@ -14,11 +14,11 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --workers 16 \
+   --workers 4 \
    --lr 0.001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 100 \
+   --epochs 25 \
    --bn-type syncbn \
    --batch-size 8 \
    --corr-radius 4  \
