@@ -15,12 +15,12 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
    --workers 4 \
-   --lr 0.001 \
+   --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
    --epochs 25 \
    --bn-type syncbn \
-   --batch-size 8 \
+   --batch-size 4 \
    --corr-radius 4  \
    --disp-crop-imh 256 \
    --disp-crop-imw 512 \
