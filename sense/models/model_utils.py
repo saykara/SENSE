@@ -37,7 +37,6 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 	elif args.enc_arch == 'psmnext':
 		enc = PSMNextEncoder(args.bn_type, args.kernel_size, with_ppm)
 		num_channels = [32, 32, 64, 128, 128]
-		num_channels = [32, 32, 64, 128, 128]
 	else:
 		raise Exception('Unsupported encoder architecture: {}'.format(args.enc_arch))
 	print("Encoder parameters: ", sum([p.data.nelement() for p in enc.parameters()]))

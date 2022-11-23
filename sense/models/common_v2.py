@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from sense.lib.nn import SynchronizedBatchNorm2d
 
+from timm.models.layers import DropPath
 
 def dwconv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True):
     return nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding, 
@@ -300,11 +301,11 @@ def disp_warp(rim, disp):
 
     return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1), align_corners=True)
 
-def make_dec_layer(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn'):
+def make_dec_layer(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', multiply=2):
     return nn.Sequential(
         dwconv(in_planes, in_planes, kernel_size, stride, padding, dilation, bias),
         make_bn_layer(bn_type, in_planes),
-        conv(in_planes, 3 * in_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
+        conv(in_planes, multiply * in_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
         nn.GELU(),
-        conv(3 * in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
-    )
+        conv(multiply * in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
+    ), DropPath(0.), nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1,padding=0, dilation=1, bias=True)
