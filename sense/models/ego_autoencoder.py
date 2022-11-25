@@ -61,3 +61,42 @@ class EGODecoder(nn.Module):
         recovered_of = self.flow2(torch.cat((d2, c1, f3)))
         
         return recovered_of
+    
+
+class EGOAutoEncoder(nn.Module):
+    def __init__(self, bn_type, act_type):
+        self.encoder = EGOEncoder(bn_type, act_type)
+        self.decoder = EGODecoder(bn_type, act_type)
+        self.bn_type = bn_type
+        self.act_type = act_type
+        
+        self.weight_init()
+        
+        print('Number of encoder parameters: {}'.format(
+			sum([p.data.nelement() for p in self.encoder.parameters()])))
+        print('Number of decoder parameters: {}'.format(
+			sum([p.data.nelement() for p in self.decoder.parameters()])))
+        
+    def weight_init(self):
+        for m in self.modules(): 
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d): 
+                nn.init.kaiming_normal_(m.weight.data, mode='fan_in') 
+                if m.bias is not None: 
+                    m.bias.data.zero_() 
+            if isinstance(m, SynchronizedBatchNorm2d): 
+                if self.bn_type == 'syncbn': 
+                    m.weight.data.fill_(1) 
+                    m.bias.data.zero_() 
+                else: 
+                    raise Exception('There should be no SynchronizedBatchNorm2d layers.') 
+            if isinstance(m, nn.BatchNorm2d): 
+                if self.bn_type == 'plain': 
+                    m.weight.data.fill_(1) 
+                    m.bias.data.zero_() 
+                else: 
+                    raise Exception('There should be no nn.BatchNorm2d layers.')
+                
+    def forward(self, img):
+        x = self.encoder(img)
+        recovered_of = self.decoder(x)
+        return recovered_of
