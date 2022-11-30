@@ -9,7 +9,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --enc-arch psmnext \
    --dec-arch pwcdcnext \
    --disp-refinement hourglass \
-   --flow-dec-arch pwcdcnext \
+   --flow-dec-arch pwcdc \
    --flow-no-ppm \
    --flow-refinement none \
    --maxdisp 192 \
