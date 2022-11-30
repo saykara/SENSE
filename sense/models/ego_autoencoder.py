@@ -64,7 +64,8 @@ class EGODecoder(nn.Module):
     
 
 class EGOAutoEncoder(nn.Module):
-    def __init__(self, bn_type, act_type):
+    def __init__(self, bn_type="syncbn", act_type="gelu"):
+        super(EGOAutoEncoder, self).__init__()
         self.encoder = EGOEncoder(bn_type, act_type)
         self.decoder = EGODecoder(bn_type, act_type)
         self.bn_type = bn_type
