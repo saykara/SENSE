@@ -13,13 +13,14 @@ import pickle
 from datetime import datetime
 import numpy as np
 
-
-def RMSLELoss(input, output):
-    loss = 0.
-    for i in range(input.len()):
-        loss = loss + math.pow(math.log(output[i] + 1) - math.log(input[i] + 1), 2)
-    loss = loss / input.len()
-    return math.sqrt(loss)
+# https://discuss.pytorch.org/t/rmsle-loss-function/67281/2
+class RMSLELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        
+    def forward(self, pred, actual):
+        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1)))
 
 def data_cacher(path):
     cache_file_path = 'cache/ego_flow.pkl'
@@ -105,12 +106,15 @@ def main(args):
         weight_decay=0.0004
     )
     # Criteria
-    criteria = RMSLELoss
+    criteria = RMSLELoss()
 
     # Save & Load model
 
     # Print format
     print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
     # Train
     start_epoch = 1

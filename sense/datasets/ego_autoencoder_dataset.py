@@ -10,12 +10,18 @@ import pickle
 from PIL import Image
 
 
-def imreader(root, path, flag=1):
-    im = np.array(Image.open(os.path.join(root, path)))
-    #im = cv2.imread(os.path.join(root, path), flag)
-    im = im.astype(np.float32) / 255.0
+def imreader(root, path, flag=0):
+    im = cv2.imread(os.path.join(root, path), flag)
     return im
-    
+
+# https://stackoverflow.com/a/51272988
+def pad(img):
+    """Return bottom right padding."""
+    zeros = np.zeros((384, 1280))
+    zeros[:img.shape[0], :img.shape[1]] = img
+    zeros = zeros.astype(np.float32) / 255.0
+    return zeros
+
 class EGOFlowDataset(data.Dataset):
     def __init__(self, root, path_list, transform):
         super(EGOFlowDataset, self).__init__()
@@ -24,12 +30,11 @@ class EGOFlowDataset(data.Dataset):
         self.loader = imreader
         self.transform = transform
         
-        
     def __len__(self):
         return len(self.path_list)
 
     def __getitem__(self, index):
-        image = self.loader(self.root, self.path_list[index])
+        image = pad(self.loader(self.root, self.path_list[index]))
         if self.transform:
             image = self.transform(image)
         return image

@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=C:/Users/Utkua/OneDrive/Masaüstü/SENSE/SENSE/data/temp
+RES_DIR=C:/Users/Utkua/OneDrive/SENSE/SENSE/data/temp
 
 
 python tools/train_ego_autoencoder.py pre-train \
