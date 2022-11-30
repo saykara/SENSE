@@ -19,7 +19,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --lr-steps 70 \
    --lr-gamma 0.1 \
    --epochs 10 \
-   --bn-type syncbn \
+   --bn-type layer \
    --batch-size 1 \
    --corr-radius 4  \
    --disp-crop-imh 256 \

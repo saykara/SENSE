@@ -175,6 +175,8 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 		raise Exception('To be supported.')
 		model = torch.nn.DataParallel(model).cuda()
 		encoding.parallel.patch_replication_callback(model)
+	elif args.bn_type == 'layer':
+		model = torch.nn.DataParallel(model).cuda()
 	else:
 		raise Exception('Not supported bn type: {}'.format(args.bn_type))
 	return model
@@ -212,6 +214,8 @@ def make_encoder(args):
 		raise Exception('To be supported.')
 		enc = torch.nn.DataParallel(enc).cuda()
 		encoding.parallel.patch_replication_callback(enc)
+	elif args.bn_type == 'layer':
+		enc = torch.nn.DataParallel(enc).cuda()
 	else:
 		raise Exception('Not supported bn type: {}'.format(args.bn_type))
 	return enc
@@ -241,6 +245,8 @@ def make_seg_decoder(args):
 		raise Exception('To be supported.')
 		seg_dec = torch.nn.DataParallel(seg_dec).cuda()
 		encoding.parallel.patch_replication_callback(seg_dec)
+	elif args.bn_type == 'layer':
+		seg_dec = torch.nn.DataParallel(seg_dec).cuda()
 	else:
 		raise Exception('Not supported bn type: {}'.format(args.bn_type))
 	return seg_dec
@@ -262,6 +268,8 @@ def make_seg_teacher_model(args):
 			seg_teacher_model = torch.nn.DataParallel(seg_teacher_model).cuda()
 		elif args.bn_type == 'syncbn':
 			seg_teacher_model = DataParallelWithCallback(seg_teacher_model).cuda()
+		elif args.bn_type == 'layer':
+			seg_teacher_model = torch.nn.DataParallel(seg_teacher_model).cuda()
 		else:
 			raise Exception('Not supported bn type: {}'.format(args.bn_type))
 	return seg_teacher_model

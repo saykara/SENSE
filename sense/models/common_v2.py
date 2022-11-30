@@ -6,7 +6,6 @@ import torch.nn.functional as F
 
 from sense.lib.nn import SynchronizedBatchNorm2d
 
-from timm.models.layers import DropPath
 
 def dwconv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True):
     return nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding, 
@@ -16,7 +15,7 @@ def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, 
     return nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding, 
                      dilation=dilation, bias=bias, groups=1)
 
-def make_bn_layer(bn_type, plane):
+def make_bn_layer(bn_type, plane, feature_dim=None):
     if bn_type == 'plain':
         return nn.BatchNorm2d(plane)
     elif bn_type == 'syncbn':
@@ -27,19 +26,19 @@ def make_bn_layer(bn_type, plane):
         import encoding.nn
         return encoding.nn.BatchNorm2d(plane)
     elif bn_type == 'layer':
-        return nn.LayerNorm(plane)
+        return LayerNorm(plane, data_format='channels_first')
     else:
         raise Exception('Not supported BN type: {}.'.format(bn_type))
     
 def dwconvbn(in_planes, out_planes, kernel_size=3, 
-        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', act_type="gelu"):
+        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', act_type="gelu", feature_dim=None):
     layers = []
     layers.append(
         dwconv(in_planes, out_planes, kernel_size=kernel_size, stride=stride, 
                         padding=padding, dilation=dilation, bias=bias)
     )
     if bn_type is not None:
-        layers.append(make_bn_layer(bn_type, out_planes))
+        layers.append(make_bn_layer(bn_type, out_planes, feature_dim))
     if act_type is not None:
         if act_type == "gelu":
             layers.append(nn.GELU())
@@ -48,7 +47,7 @@ def dwconvbn(in_planes, out_planes, kernel_size=3,
     return nn.Sequential(*layers)
 
 def convbn(in_planes, out_planes, kernel_size=3, 
-        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', act_type="gelu"
+        stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', act_type="gelu", feature_dim=None
     ):
     layers = []
     layers.append(
@@ -56,7 +55,7 @@ def convbn(in_planes, out_planes, kernel_size=3,
                         padding=padding, dilation=dilation, bias=bias)
     )
     if bn_type is not None:
-        layers.append(make_bn_layer(bn_type, out_planes))
+        layers.append(make_bn_layer(bn_type, out_planes, feature_dim))
     if act_type is not None:
         if act_type == "gelu":
             layers.append(nn.GELU())
@@ -145,7 +144,7 @@ class Hourglass(nn.Module):
 # https://github.com/CSAILVision/semantic-segmentation-pytorch/blob/master/models/models.py
 class PPM(nn.Module):
     def __init__(self, encoder_planes, pool_scales=(1, 2, 3, 6), bn_type='plain',
-            ppm_last_conv_planes=256, ppm_inter_conv_planes=128
+            ppm_last_conv_planes=256, ppm_inter_conv_planes=128, feature_dim=None
         ):
         super(PPM, self).__init__()
         # Parymid Pooling Module (PPM)
@@ -159,7 +158,7 @@ class PPM(nn.Module):
             self.ppm_conv.append(
                 nn.Sequential(
                     nn.Conv2d(encoder_planes[-1], ppm_inter_conv_planes, kernel_size=1, bias=False),
-                    make_bn_layer(bn_type, ppm_inter_conv_planes),
+                    make_bn_layer(bn_type, ppm_inter_conv_planes, feature_dim),
                     nn.ReLU(inplace=True)
                 )
             )
@@ -169,7 +168,8 @@ class PPM(nn.Module):
             encoder_planes[-1] + len(pool_scales)*128, 
             self.ppm_last_conv_planes, 
             bias=False,
-            bn_type=bn_type
+            bn_type=bn_type,
+            feature_dim=feature_dim
         )
 
         weight_init(self)
@@ -301,11 +301,37 @@ def disp_warp(rim, disp):
 
     return nn.functional.grid_sample(rim, vgrid.permute(0,2,3,1), align_corners=True)
 
-def make_dec_layer(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', multiply=2):
+def make_dec_layer(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True, bn_type='syncbn', multiply=2, feature_dim=None):
     return nn.Sequential(
         dwconv(in_planes, in_planes, kernel_size, stride, padding, dilation, bias),
-        make_bn_layer(bn_type, in_planes),
+        make_bn_layer(bn_type, in_planes, feature_dim),
         conv(in_planes, multiply * in_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
         nn.GELU(),
         conv(multiply * in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
-    ), DropPath(0.), nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1,padding=0, dilation=1, bias=True)
+    )
+    
+class LayerNorm(nn.Module):
+    r""" LayerNorm that supports two data formats: channels_last (default) or channels_first. 
+    The ordering of the dimensions in the inputs. channels_last corresponds to inputs with 
+    shape (batch_size, height, width, channels) while channels_first corresponds to inputs 
+    with shape (batch_size, channels, height, width).
+    """
+    def __init__(self, normalized_shape, eps=1e-6, data_format="channels_last"):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(normalized_shape))
+        self.bias = nn.Parameter(torch.zeros(normalized_shape))
+        self.eps = eps
+        self.data_format = data_format
+        if self.data_format not in ["channels_last", "channels_first"]:
+            raise NotImplementedError 
+        self.normalized_shape = (normalized_shape, )
+    
+    def forward(self, x):
+        if self.data_format == "channels_last":
+            return F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
+        elif self.data_format == "channels_first":
+            u = x.mean(1, keepdim=True)
+            s = (x - u).pow(2).mean(1, keepdim=True)
+            x = (x - u) / torch.sqrt(s + self.eps)
+            x = self.weight[:, None, None] * x + self.bias[:, None, None]
+            return x

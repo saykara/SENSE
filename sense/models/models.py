@@ -49,7 +49,13 @@ class SceneNet(nn.Module):
 					m.weight.data.fill_(1)
 					m.bias.data.zero_()
 				else:
-					raise Exception('There should be no nn.BatchNorm2d layers.')		
+					raise Exception('There should be no nn.BatchNorm2d layers.')
+			if isinstance(m, nn.LayerNorm):
+				if self.bn_type == 'layer':
+					m.weight.data.fill_(1)
+					m.bias.data.zero_()
+				else:
+					raise Exception('There should be no nn.BatchNorm2d layers.')
 
 	def forward(self, cur_im, nxt_im=None, left_im=None, right_im=None, 
 			reuse_first_im=True, seg_use_softmax=False, seg_size=None,

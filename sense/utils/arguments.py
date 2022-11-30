@@ -67,7 +67,7 @@ def parse_args():
 						help='if to do evaluation on the training set')
 	parser.add_argument('--save-dir', default=None, type=str,
 						help='directory to save those visualization results')
-	parser.add_argument('--bn-type', default='plain', choices=['plain', 'syncbn', 'encoding'],
+	parser.add_argument('--bn-type', default='plain', choices=['plain', 'syncbn', 'encoding', 'layer'],
 						help='bantch normalization layer type.')
 	parser.add_argument('--no-occ', action='store_true',
 						help='no occlusion prediction.')
