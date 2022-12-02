@@ -82,7 +82,7 @@ def make_model(args, do_flow=True, do_disp=True, do_pose=False, do_seg=False):
 			assert args.enc_arch == 'pwc6l', '6-layer decoder only supports 6-layer encoder.'
 			disp_dec = PWC6LDispDecoder()
 		elif args.dec_arch == 'pwcdcnext':
-			disp_dec = PWCNextDispDecoder(encoder_planes=num_channels,
+			disp_dec = PWCNextDispDecoder(encoder_planes=[16, 16, 32, 64, 64],
 									md=args.corr_radius,
 									do_class=args.do_class,
 									refinement_module=args.disp_refinement,
