@@ -110,11 +110,11 @@ class PWCNextDispDecoder(nn.Module):
         dd = np.cumsum(encoder_planes).tolist()
         
         od = nd
-        self.disp_conv5_0= make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv5_1= make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv5_2= make_dec_layer(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv5_3= make_dec_layer(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv5_4= make_dec_layer(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv5_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv5_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv5_2 = make_dec_layer(od+dd[1],encoder_planes[2],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv5_3 = make_dec_layer(od+dd[2],encoder_planes[3],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv5_4 = make_dec_layer(od+dd[3],encoder_planes[4],  kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
         if do_class:
             self.predict_depth5 = predict_class(od+dd[4]) 
         else:
@@ -125,13 +125,15 @@ class PWCNextDispDecoder(nn.Module):
             self.predict_occ5 = predict_class(od+dd[4], 2)     # binary classification 
         
         od = nd+encoder_planes[3]+2
+        td = nd+encoder_planes[3]*2+2
         if pred_occ and cat_occ:
             od += 2
-        self.disp_conv4_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv4_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv4_2 = make_dec_layer(od+dd[1],encoder_planes[2], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv4_3 = make_dec_layer(od+dd[2],encoder_planes[3], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv4_4 = make_dec_layer(od+dd[3],encoder_planes[4], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv4 = nn.Conv2d(td, od, kernel_size=1, stride=1, padding=0, dilation=1, bias=True)
+        self.disp_conv4_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv4_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv4_2 = make_dec_layer(od+dd[1],encoder_planes[2], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv4_3 = make_dec_layer(od+dd[2],encoder_planes[3], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv4_4 = make_dec_layer(od+dd[3],encoder_planes[4], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
         if do_class:
             self.predict_depth4 = predict_class(od+dd[4]) 
         else:
@@ -142,13 +144,15 @@ class PWCNextDispDecoder(nn.Module):
             self.predict_occ4 = predict_class(od+dd[4], 2)     # binary classification 
         
         od = nd+encoder_planes[2]+2
+        td = nd+encoder_planes[2]*2+2
         if pred_occ and cat_occ:
             od += 2
-        self.disp_conv3_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv3_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv3_2 = make_dec_layer(od+dd[1],encoder_planes[2], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv3_3 = make_dec_layer(od+dd[2],encoder_planes[3], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv3_4 = make_dec_layer(od+dd[3],encoder_planes[4], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv3 = nn.Conv2d(td, od, kernel_size=1, stride=1, padding=0, dilation=1, bias=True)
+        self.disp_conv3_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv3_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv3_2 = make_dec_layer(od+dd[1],encoder_planes[2], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv3_3 = make_dec_layer(od+dd[2],encoder_planes[3], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv3_4 = make_dec_layer(od+dd[3],encoder_planes[4], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
         if do_class:
             self.predict_depth3 = predict_class(od+dd[4]) 
         else:
@@ -159,13 +163,15 @@ class PWCNextDispDecoder(nn.Module):
             self.predict_occ3 = predict_class(od+dd[4], 2)     # binary classification 
         
         od = nd+encoder_planes[1]+2
+        td = nd+encoder_planes[1]*2+2
         if pred_occ and cat_occ:
             od += 2
-        self.disp_conv2_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv2_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv2_2 = make_dec_layer(od+dd[1],encoder_planes[2], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv2_3 = make_dec_layer(od+dd[2],encoder_planes[3], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
-        self.disp_conv2_4 = make_dec_layer(od+dd[3],encoder_planes[4], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type)
+        self.disp_conv2 = nn.Conv2d(td, od, kernel_size=1, stride=1, padding=0, dilation=1, bias=True)
+        self.disp_conv2_0 = make_dec_layer(od,      encoder_planes[0], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv2_1 = make_dec_layer(od+dd[0],encoder_planes[1], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv2_2 = make_dec_layer(od+dd[1],encoder_planes[2], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv2_3 = make_dec_layer(od+dd[2],encoder_planes[3], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
+        self.disp_conv2_4 = make_dec_layer(od+dd[3],encoder_planes[4], kernel_size=kernel_size, stride=1, padding=pad, bn_type=bn_type, multiply=4)
         if do_class:
             self.predict_depth2 = predict_class(od+dd[4])
         else:
@@ -173,12 +179,12 @@ class PWCNextDispDecoder(nn.Module):
         if pred_occ:
             self.predict_occ2 = predict_class(od+dd[4], 2)     # binary classification 
         
-        self.disp_dc_conv1 = make_dec_layer(od+dd[4], 128, kernel_size=3, stride=1, padding=1,  dilation=1, bn_type=bn_type)
-        self.disp_dc_conv2 = make_dec_layer(128,      128, kernel_size=3, stride=1, padding=2,  dilation=2, bn_type=bn_type)
-        self.disp_dc_conv3 = make_dec_layer(128,      128, kernel_size=3, stride=1, padding=4,  dilation=4, bn_type=bn_type)
-        self.disp_dc_conv4 = make_dec_layer(128,      96,  kernel_size=3, stride=1, padding=8,  dilation=8, bn_type=bn_type)
-        self.disp_dc_conv5 = make_dec_layer(96,       64,  kernel_size=3, stride=1, padding=16, dilation=16, bn_type=bn_type)
-        self.disp_dc_conv6 = make_dec_layer(64,       32,  kernel_size=3, stride=1, padding=1,  dilation=1, bn_type=bn_type)
+        self.disp_dc_conv1 = make_dec_layer(od+dd[4], 128, kernel_size=3, stride=1, padding=1,  dilation=1, bn_type=bn_type, multiply=4)
+        self.disp_dc_conv2 = make_dec_layer(128,      128, kernel_size=3, stride=1, padding=2,  dilation=2, bn_type=bn_type, multiply=4)
+        self.disp_dc_conv3 = make_dec_layer(128,      128, kernel_size=3, stride=1, padding=4,  dilation=4, bn_type=bn_type, multiply=4)
+        self.disp_dc_conv4 = make_dec_layer(128,      96,  kernel_size=3, stride=1, padding=8,  dilation=8, bn_type=bn_type, multiply=4)
+        self.disp_dc_conv5 = make_dec_layer(96,       64,  kernel_size=3, stride=1, padding=16, dilation=16, bn_type=bn_type, multiply=4)
+        self.disp_dc_conv6 = make_dec_layer(64,       32,  kernel_size=3, stride=1, padding=1,  dilation=1, bn_type=bn_type, multiply=4)
         if do_class:
             self.disp_dc_conv7 = predict_class(32)
         else:
@@ -186,7 +192,7 @@ class PWCNextDispDecoder(nn.Module):
         if pred_occ:
             self.occ_dc_conv7 = predict_class(32, 2)
 
-        in_plane = 2 * encoder_planes[0] + 1
+        in_plane = 2 * encoder_planes[0] * 2 + 1
         if refinement_module != 'none' and pred_occ and cat_occ:
             in_plane += 2
 
@@ -234,6 +240,7 @@ class PWCNextDispDecoder(nn.Module):
         x = torch.cat((disp_corr4, c14, up_depth5, up_disp_feat5), 1)
         if self.pred_occ and self.cat_occ:
             x = torch.cat((x, F.interpolate(occ5, scale_factor=2, mode='bilinear')), 1)
+        x = self.disp_conv4(x)
         x = torch.cat((x, self.disp_conv4_0(x)),1)
         x = torch.cat((x, self.disp_conv4_1(x)),1)
         x = torch.cat((x, self.disp_conv4_2(x)),1)
@@ -256,6 +263,7 @@ class PWCNextDispDecoder(nn.Module):
         x = torch.cat((disp_corr3, c13, up_depth4, up_flow_feat4), 1)
         if self.pred_occ and self.cat_occ:
             x = torch.cat((x, F.interpolate(occ4, scale_factor=2, mode='bilinear')), 1)
+        x = self.disp_conv3(x)
         x = torch.cat((x, self.disp_conv3_0(x)),1)
         x = torch.cat((x, self.disp_conv3_1(x)),1)
         x = torch.cat((x, self.disp_conv3_2(x)),1)
@@ -278,6 +286,7 @@ class PWCNextDispDecoder(nn.Module):
         x = torch.cat((disp_corr2, c12, up_depth3, up_disp_feat3), 1)
         if self.pred_occ and self.cat_occ:
             x = torch.cat((x, F.interpolate(occ3, scale_factor=2, mode='bilinear')), 1)
+        x = self.disp_conv2(x)
         x = torch.cat((x, self.disp_conv2_0(x)),1)
         x = torch.cat((x, self.disp_conv2_1(x)),1)
         x = torch.cat((x, self.disp_conv2_2(x)),1)
