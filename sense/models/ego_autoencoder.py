@@ -46,29 +46,30 @@ class EGODecoder(nn.Module):
         
     def forward(self, x):
         c1, c2, c3, c4, c5 = x
+        
         d5 = self.deconv5(c5)
         f5 = self.flow5(torch.cat((d5, c4)))
-        f5 = f5[None, :]
+        f5 = torch.unsqueeze(f5, 0)
         u5 = torch.squeeze(interpolate(f5, scale_factor=2, mode='bilinear'))
         f5 = torch.squeeze(f5)
         
         d4 = self.deconv4(torch.cat((d5, c4)))
         f4 = self.flow4(torch.cat((d4, c3, u5)))
-        f4 = f4[None, :]
+        f4 = torch.unsqueeze(f4, 0)
         u4 = torch.squeeze(interpolate(f4, scale_factor=2, mode='bilinear'))
         f4 = torch.squeeze(f4)
         
         d3 = self.deconv3(torch.cat((d4, c3, u5)))
         f3 = self.flow3(torch.cat((d3, c2, u4)))
-        f3 = f3[None, :]
+        f3 = torch.unsqueeze(f3, 0)
         u3 = torch.squeeze(interpolate(f3, scale_factor=2, mode='bilinear'))
         f3 = torch.squeeze(f3)
         
         d2 = self.deconv2(torch.cat((d3, c2, u4)))
         f2 = self.flow2(torch.cat((d2, c1, u3)))
-        f2 = f2[None, :]
-        recovered_of = torch.squeeze(interpolate(f2, scale_factor=4, mode='bilinear'))
-        return recovered_of
+        f2 = torch.unsqueeze(f2, 0)
+        u2 = torch.squeeze(interpolate(f2, scale_factor=4, mode='bilinear'))
+        return u2
     
 
 class EGOAutoEncoder(nn.Module):
@@ -88,8 +89,9 @@ class EGOAutoEncoder(nn.Module):
         
     def weight_init(self):
         for m in self.modules(): 
-            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d): 
-                nn.init.kaiming_normal_(m.weight.data, mode='fan_in') 
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+                nn.init.xavier_uniform_(m.weight.data, gain=nn.init.calculate_gain('relu'))
+                # nn.init.kaiming_normal_(m.weight.data, mode='fan_in') 
                 if m.bias is not None: 
                     m.bias.data.zero_() 
             if isinstance(m, SynchronizedBatchNorm2d): 

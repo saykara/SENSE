@@ -9,9 +9,10 @@ import pdb
 import pickle
 from PIL import Image
 
+import sense.datasets.dataset_utils as du
 
-def imreader(root, path, flag=0):
-    im = cv2.imread(os.path.join(root, path), flag)
+def imreader(path, flag=0):
+    im = du.load_flo(path)
     return im
 
 # https://stackoverflow.com/a/51272988
@@ -34,7 +35,7 @@ class EGOFlowDataset(data.Dataset):
         return len(self.path_list)
 
     def __getitem__(self, index):
-        image = pad(self.loader(self.root, self.path_list[index]))
+        image = pad(self.loader(self.path_list[index]))
         if self.transform:
             image = self.transform(image)
         return image
