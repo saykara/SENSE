@@ -12,13 +12,16 @@ from PIL import Image
 import sense.datasets.dataset_utils as du
 
 def imreader(path, flag=0):
-    im = du.load_flo(path)
+    im = cv2.imread(path, flag)
+    im = im.astype(np.float32) / 255.0
     return im
 
 # https://stackoverflow.com/a/51272988
 def pad(img):
     """Return bottom right padding."""
-    zeros = np.zeros((384, 1280))
+    h_pad = 32 - img.shape[0] % 32
+    w_pad = 32 - img.shape[1] % 32
+    zeros = np.zeros((img.shape[0] + h_pad, img.shape[1] + w_pad))
     zeros[:img.shape[0], :img.shape[1]] = img
     zeros = zeros.astype(np.float32) / 255.0
     return zeros
@@ -37,7 +40,10 @@ class EGOFlowDataset(data.Dataset):
     def __getitem__(self, index):
         image = pad(self.loader(self.path_list[index]))
         if self.transform:
+            # Array to PIL - PIL to array, readdress this
+            image = Image.fromarray(image)
             image = self.transform(image)
+            image = np.asarray(image)
         return image
     
     
