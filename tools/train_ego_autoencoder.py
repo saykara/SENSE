@@ -202,6 +202,7 @@ def validation(model, data, criteria):
         
 def save_checkpoint(model, optimizer, epoch, global_step, args):
     #SAVE
+    global temp_save
     now = datetime.now().strftime("%d-%m-%H-%M")
     if temp_save == None:
         temp_save = f"ego_autoencoder_{now}"
