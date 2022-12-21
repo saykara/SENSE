@@ -125,6 +125,8 @@ def make_flow_data_helper(args):
     return train_list, val_list
 
 def data_cacher(args):
+    if not os.path.exists("./cache"):
+        os.mkdir("cache")
     cache_file_path = f'cache/{args.dataset}_ego_flow.pkl'
     if os.path.exists(cache_file_path):
         with open(cache_file_path, 'rb') as f:
