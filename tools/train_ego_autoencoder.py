@@ -1,28 +1,44 @@
 from sense.models.ego_autoencoder import EGOAutoEncoder
-from sense.datasets.ego_autoencoder_dataset import EGOFlowDataset
-from sense.utils.arguments import parse_args
+from sense.datasets.ego_autoencoder_dataset import EGOFlowDataset, load_flow
+from sense.utils.arguments import parse_autoencoder_args
+from sense.lib.nn import DataParallelWithCallback
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
+from torch.autograd import Variable
 from torchvision import transforms
 
 import os
 import sys
-import cv2
 import math
 import pickle
 import random
-import imageio
 from datetime import datetime
 import numpy as np
 
-import sense.models.model_utils as model_utils
-import sense.utils.kitti_viz as kitti_viz
-import tools.demo as demo
-import tools.train_joint_synthetic_sceneflow as tjss
+import sense.datasets.flow_transforms as flow_transforms
 
+BASE_DIR='/content/dataset'
+
+def write_flo(filename, flow):
+    """
+    write optical flow in Middlebury .flo format
+    :param flow: optical flow map
+    :param filename: optical flow file path to be saved
+    :return: None
+    """
+    f = open(filename, 'wb')
+    magic = np.array([202021.25], dtype=np.float32)
+    (height, width) = flow.shape[0:2]
+    w = np.array([width], dtype=np.int32)
+    h = np.array([height], dtype=np.int32)
+    magic.tofile(f)
+    w.tofile(f)
+    h.tofile(f)
+    flow.tofile(f)
+    f.close() 
+    
 # https://discuss.pytorch.org/t/rmsle-loss-function/67281/2
 class RMSLELoss(nn.Module):
     def __init__(self):
@@ -41,62 +57,79 @@ class RMSLELoss(nn.Module):
         return loss
 
     def forward(self, pred, actual):
-        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1))).cuda()
+        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1)))
 
-def make_flow_data_helper(base_dir):
+def make_flow_data_helper(args):
     train_list = []
     val_list = []
+    if args.dataset == "local":
+        fly_train_dir = "E:/Thesis/Flow/train"
+        for img in os.listdir(fly_train_dir):
+            train_list.append(fly_train_dir + "/" + img)
+        fly_train_dir = "E:/Thesis/Flow/val"
+        for img in os.listdir(fly_train_dir):
+            val_list.append(fly_train_dir + "/" + img)
+            
+    elif args.dataset == "sceneflow":
+        # Flyingthings3d
+        fly_train_dir = os.path.join(BASE_DIR, "flyingthings3d", "train")
+        for img in os.listdir(fly_train_dir):
+            train_list.append(os.path.join(fly_train_dir, img))
 
-    # Flyingthings3d
-    # fly_train_dir = os.path.join(base_dir, "flyingthings3d", "train")
-    fly_train_dir = base_dir + "/" + "flyingthings3d" + "/" + "train"
-    for img in os.listdir(fly_train_dir):
-        train_list.append(fly_train_dir + "/" + img)
+        fly_val_dir = os.path.join(BASE_DIR, "flyingthings3d", "val")
+        for img in os.listdir(fly_val_dir):
+            val_list.append(os.path.join(fly_val_dir, img))
 
-    # fly_val_dir = os.path.join(base_dir, "flyingthings3d", "val")
-    fly_val_dir = base_dir + "/" + "flyingthings3d" + "/" + "val"
-    for img in os.listdir(fly_val_dir):
-        val_list.append(fly_val_dir + "/" + img)
-  
-     # Monkaa
-    # monkaa_dir = os.path.join(base_dir, "monkaa")
-    monkaa_dir = base_dir + "/" + "monkaa"
-    for dir in os.listdir(monkaa_dir):
-        for img in os.listdir(monkaa_dir + "/" + dir):
-            train_list.append(monkaa_dir + "/" + dir + "/" + img)
+        # Monkaa
+        monkaa_dir = os.path.join(BASE_DIR, "monkaa")
+        for dir in os.listdir(monkaa_dir):
+            for img in os.listdir(os.path.join(monkaa_dir, dir)):
+                train_list.append(os.path.join(monkaa_dir, dir, img))
 
-     # Driving
-    # driving_dir = os.path.join(base_dir, "driving")
-    driving_dir = base_dir + "/" + "driving"
-    for focal in os.listdir(driving_dir):
-        for direction in os.listdir(driving_dir + "/" + focal):
-            for speed in os.listdir(driving_dir + "/" + focal + "/" + direction):
-                for img in os.listdir(driving_dir + "/" + focal + "/" + direction + "/" + speed):
-                    train_list.append(driving_dir + "/" + focal + "/" + direction + "/" + speed  + "/" + img)
-     # Sintel training
-    # driving_dir = os.path.join(base_dir, "driving")
-    sintel_dir = base_dir + "/" + "sintel"
-    for dir in os.listdir(sintel_dir + "/" + "training"):
-        for img in os.listdir(sintel_dir + "/" + "training" + "/" + dir):
-            train_list.append(sintel_dir + "/" + "training" + "/" + dir + "/" + img)
-   
-    # Sintel stereo
-    for dir in os.listdir(sintel_dir + "/" + "stereo"):
-        for img in os.listdir(sintel_dir + "/" + "stereo" + "/" + dir):
-            train_list.append(sintel_dir + "/" + "stereo" + "/" + dir + "/" + img)
+        # Driving
+        driving_dir = os.path.join(BASE_DIR, "driving")
+        for focal in os.listdir(driving_dir):
+            for direction in os.listdir(os.path.join(driving_dir, focal)):
+                for speed in os.listdir(os.path.join(driving_dir, focal, direction)):
+                    for img in os.listdir(os.path.join(driving_dir, focal, direction, speed)):
+                        train_list.append(os.path.join(driving_dir, focal, direction, speed, img))
+        
+        # Sintel training
+        sintel_dir = os.path.join(BASE_DIR, "sintel")
+        for dir in os.listdir(os.path.join(sintel_dir, "training")):
+            for img in os.listdir(os.path.join(sintel_dir, "training", dir)):
+                train_list.append(os.path.join(sintel_dir, "training", dir, img))
 
+        # Sintel stereo
+        for dir in os.listdir(os.path.join(sintel_dir, "stereo")):
+            for img in os.listdir(os.path.join(sintel_dir, "stereo", dir)):
+                train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
+                
+    elif args.dataset == "kittimalaga":
+        raise NotImplementedError
+        # TODO Implement Kitti_vo and Malaga dataset loader 
+        #fly_train_dir = os.path.join(BASE_DIR, "flyingthings3d", "train")
+        #for img in os.listdir(fly_train_dir):
+        #    train_list.append(os.path.join(fly_train_dir, img))
+
+        #fly_val_dir = os.path.join(BASE_DIR, "flyingthings3d", "val")
+        #for img in os.listdir(fly_val_dir):
+        #    val_list.append(os.path.join(fly_val_dir, img))
+    
+    else:
+        raise f"Invalid dataset => {args.dataset}"
+    
     return train_list, val_list
 
-def data_cacher(path):
-    cache_file_path = 'cache/ego_flow.pkl'
+def data_cacher(args):
+    cache_file_path = f'cache/{args.dataset}_ego_flow.pkl'
     if os.path.exists(cache_file_path):
         with open(cache_file_path, 'rb') as f:
             cached_data = pickle.load(f)
             train_data = cached_data['train_data']
             test_data = cached_data['test_data']
     else:
-        # data_list = os.listdir(path)
-        train_data, test_data = make_flow_data_helper(path)
+        train_data, test_data = make_flow_data_helper(args)
         with open(cache_file_path, 'wb') as f:
             pickle.dump(
                 {
@@ -107,11 +140,17 @@ def data_cacher(path):
     return train_data, test_data
     
 def make_data_loader(path, args):
-    # TODO Reconsider transforms
-    transform = torchvision.transforms.Compose([
-            transforms.RandomResizedCrop((544, 992)),
-            transforms.RandomHorizontalFlip(0.3)])
-    train_data, test_data = data_cacher(path)
+    height_new = args.flow_crop_imh
+    width_new = args.flow_crop_imw
+    transform = transforms.Compose([
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[120.0, 120.0]),
+        flow_transforms.ArrayToTensor(),
+        transforms.RandomResizedCrop((height_new, width_new)),
+        transforms.RandomHorizontalFlip(0.3),
+        transforms.RandomVerticalFlip(0.3),
+    ]) 
+ 
+    train_data, test_data = data_cacher(args)
     print("Train data sample size: ", len(train_data))
     print("Test data sample size: ", len(test_data))
     train_set = EGOFlowDataset(root=str(path), path_list=train_data, transform=transform)
@@ -135,10 +174,10 @@ def make_data_loader(path, args):
 
 def train(model, optimizer, data, criteria, args):
     model.train()
-    data = data.cuda()
-    optimizer.zero_grad()
+    data = Variable(data).cuda()
     data_pred = model(data)
     loss = criteria(data_pred, data)
+    optimizer.zero_grad()
     loss.backward()
     optimizer.step()
     loss = loss.item()
@@ -147,7 +186,6 @@ def train(model, optimizer, data, criteria, args):
 def validation(model, data, criteria):
     model.eval()
     data = data.cuda()
-    
     with torch.no_grad():
         data_pred = model(data)
         loss = criteria(data_pred, data)
@@ -185,7 +223,15 @@ def main(args):
     train_loader, validation_loader = make_data_loader(dataset, args)
     
     # Make model
-    model = EGOAutoEncoder()
+    model = EGOAutoEncoder(args.bn_type)
+    
+    if args.bn_type == 'plain':
+        model = torch.nn.DataParallel(model).cuda()
+    elif args.bn_type == 'syncbn':
+        model = DataParallelWithCallback(model).cuda()
+    else:
+        raise Exception('Not supported bn type: {}'.format(args.bn_type))
+        
     print('Number of model parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()]))
     )
@@ -216,9 +262,6 @@ def main(args):
     # Print format
     print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-
     # Train
     start_epoch = 1
     global_step = 0
@@ -226,8 +269,8 @@ def main(args):
     train_start = datetime.now()
     for epoch in range(start_epoch, args.epochs + 1):
         epoch_start = datetime.now()
+        batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
-            batch_start = datetime.now()
             train_loss = train(model, optimizer, batch_data, criteria, args)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
@@ -235,6 +278,7 @@ def main(args):
                     'Train', epoch, batch_idx, len(train_loader),
                     train_loss, str(datetime.now() - batch_start), lr))
                 sys.stdout.flush()
+                batch_start = datetime.now()
 
         val_start = datetime.now()
         val_loss = 0
@@ -247,12 +291,10 @@ def main(args):
         # Save model
         print(f'Epoch {epoch} elapsed time => {str(datetime.now() - epoch_start)}')
         save_checkpoint(model, optimizer, epoch, global_step, args)
-    save_checkpoint(model.encoder, optimizer, epoch, global_step, args, True)
     print(f'Train elapsed time => {str(datetime.now() - train_start)}')
 
-
 if __name__ == '__main__':
-    parser = parse_args()
+    parser = parse_autoencoder_args()
     args = parser.parse_args()
     args.stride = 32
     main(args)

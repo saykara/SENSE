@@ -63,6 +63,23 @@ class Normalize(object):
         for c in range(2):
             flow[c,:,:] = (flow[c,:,:] - self.mean[c]) / self.std[c]
         return [flow, flow_occ]
+    
+class NormalizeFlowOnly(object):
+    """Given mean: (R, G, B) and std: (R, G, B),
+    will normalize each channel of the torch.*Tensor, i.e.
+    channel = (channel - mean) / std
+    """
+
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, flow):
+        flow[flow <= -120.0] = -119.99
+        flow[flow >=  120.0] =  119.99
+        for c in range(2):
+            flow[:,:,c] = (flow[:,:,c] - self.mean[c]) / self.std[c]
+        return flow
 
 class ArrayToTensor(object):
     """Converts a numpy.ndarray (H x W x C) to a torch.FloatTensor of shape (C x H x W)."""

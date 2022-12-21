@@ -153,3 +153,49 @@ def parse_args():
 	parser.add_argument('--dec-kernel-size', default=3, type=int,
 						help='filter size of decoders.')
 	return parser
+
+def parse_autoencoder_args():
+	parser = argparse.ArgumentParser(description='Ego-Motion Estimation AutoEncoder')
+	parser.add_argument('cmd', choices=['pre-train', 'finetune', 'eval', 'misc', 'demo'])
+ 
+	parser.add_argument('--flow-crop-imh', type=int, default=256,
+						help='height of cropped image')
+	parser.add_argument('--flow-crop-imw', type=int, default=512,
+						help='width of cropped image')
+ 
+	parser.add_argument('--dataset', default='sceneflow',
+						help='datapath')
+	
+	parser.add_argument('--print-freq', default=20, type=int,
+						help='frequency to print information')
+	parser.add_argument('--save-freq', default=1, type=int,
+						help='frequency to save checkpoint')
+	parser.add_argument('--save-dir', default=None, type=str,
+						help='directory to save those visualization results')
+	parser.add_argument('--savemodel', default='./',
+						help='save model')
+	parser.add_argument('--loadmodel', default=None,
+						help='load model')
+	parser.add_argument('--resume', default=None,
+						help='saved checkpoint to resume training.')
+	
+
+	parser.add_argument('--lr', default=0.0001, type=float,
+						help='initial learning rate')
+	parser.add_argument('--lr-steps', default=[100000000000], type=int, nargs='+',
+						help='stepsize of changing the learning rate')
+	parser.add_argument('--lr-gamma', default=0.1, type=float,
+						help='learning rate will be multipled by this gamma')
+	parser.add_argument('--bn-type', default='plain', choices=['plain', 'syncbn', 'encoding'],
+						help='bantch normalization layer type.')
+	parser.add_argument('--kernel-size', default=3, type=int,
+						help='filter size of convolution.')
+	parser.add_argument('--batch-size', default=8, type=int)
+	parser.add_argument('--epochs', type=int, default=300,
+						help='number of epochs to train')
+ 
+	parser.add_argument('--seed', type=int, default=1, metavar='S',
+						help='random seed (default: 1)')
+	parser.add_argument('--workers', type=int, default=8,
+						help='number of workers to load data')
+	return parser
