@@ -73,23 +73,24 @@ def make_flow_data_helper(args):
             val_list.append(fly_train_dir + "/" + img)
             
     elif args.dataset == "sceneflow":
+        scene_dir = os.path.join(BASE_DIR, "flow_dataset")
         # Flyingthings3d
-        fly_train_dir = os.path.join(BASE_DIR, "flyingthings3d", "train")
+        fly_train_dir = os.path.join(scene_dir, "flyingthings3d", "train")
         for img in os.listdir(fly_train_dir):
             train_list.append(os.path.join(fly_train_dir, img))
 
-        fly_val_dir = os.path.join(BASE_DIR, "flyingthings3d", "val")
+        fly_val_dir = os.path.join(scene_dir, "flyingthings3d", "val")
         for img in os.listdir(fly_val_dir):
             val_list.append(os.path.join(fly_val_dir, img))
 
         # Monkaa
-        monkaa_dir = os.path.join(BASE_DIR, "monkaa")
+        monkaa_dir = os.path.join(scene_dir, "monkaa")
         for dir in os.listdir(monkaa_dir):
             for img in os.listdir(os.path.join(monkaa_dir, dir)):
                 train_list.append(os.path.join(monkaa_dir, dir, img))
 
         # Driving
-        driving_dir = os.path.join(BASE_DIR, "driving")
+        driving_dir = os.path.join(scene_dir, "driving")
         for focal in os.listdir(driving_dir):
             for direction in os.listdir(os.path.join(driving_dir, focal)):
                 for speed in os.listdir(os.path.join(driving_dir, focal, direction)):
@@ -97,7 +98,7 @@ def make_flow_data_helper(args):
                         train_list.append(os.path.join(driving_dir, focal, direction, speed, img))
         
         # Sintel training
-        sintel_dir = os.path.join(BASE_DIR, "sintel")
+        sintel_dir = os.path.join(scene_dir, "sintel")
         for dir in os.listdir(os.path.join(sintel_dir, "training")):
             for img in os.listdir(os.path.join(sintel_dir, "training", dir)):
                 train_list.append(os.path.join(sintel_dir, "training", dir, img))
