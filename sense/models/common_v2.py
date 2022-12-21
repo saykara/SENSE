@@ -40,9 +40,9 @@ def dwconvbn(in_planes, out_planes, kernel_size=3,
     if bn_type is not None:
         layers.append(make_bn_layer(bn_type, out_planes))
     if act_type is not None:
-        if act_type is "gelu":
+        if act_type == "gelu":
             layers.append(nn.GELU())
-        elif act_type is "relu":
+        elif act_type == "relu":
             layers.append(nn.ReLU())
     return nn.Sequential(*layers)
 
@@ -57,9 +57,9 @@ def convbn(in_planes, out_planes, kernel_size=3,
     if bn_type is not None:
         layers.append(make_bn_layer(bn_type, out_planes))
     if act_type is not None:
-        if act_type is "gelu":
+        if act_type == "gelu":
             layers.append(nn.GELU())
-        elif act_type is "relu":
+        elif act_type == "relu":
             layers.append(nn.ReLU())
     return nn.Sequential(*layers)
 
