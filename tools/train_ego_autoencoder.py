@@ -21,6 +21,8 @@ import sense.datasets.flow_transforms as flow_transforms
 
 BASE_DIR='/content/dataset'
 
+temp_save = None
+
 def write_flo(filename, flow):
     """
     write optical flow in Middlebury .flo format
@@ -139,7 +141,7 @@ def data_cacher(args):
                 f, pickle.HIGHEST_PROTOCOL)
     return train_data, test_data
     
-def make_data_loader(path, args):
+def make_data_loader(args):
     height_new = args.flow_crop_imh
     width_new = args.flow_crop_imw
     transform = transforms.Compose([
@@ -153,8 +155,11 @@ def make_data_loader(path, args):
     train_data, test_data = data_cacher(args)
     print("Train data sample size: ", len(train_data))
     print("Test data sample size: ", len(test_data))
-    train_set = EGOFlowDataset(root=str(path), path_list=train_data, transform=transform)
-    test_set = EGOFlowDataset(root=str(path), path_list=test_data, transform=transform)
+    
+    path = "E:/Thesis/content/flow_dataset" if args.dataset == "local" else "/content/flow_dataset"
+    
+    train_set = EGOFlowDataset(root=path, path_list=train_data, transform=transform)
+    test_set = EGOFlowDataset(root=path, path_list=test_data, transform=transform)
     return torch.utils.data.DataLoader(
             train_set,
             batch_size=args.batch_size,
@@ -192,13 +197,12 @@ def validation(model, data, criteria):
     loss = loss.item()
     return loss
         
-def save_checkpoint(model, optimizer, epoch, global_step, args, final=False):
+def save_checkpoint(model, optimizer, epoch, global_step, args):
     #SAVE
     now = datetime.now().strftime("%d-%m-%H-%M")
-    save_dir = f"ego_autoencoder_{now}"
-    if final:
-        save_dir = f"ego_encoder_{now}"
-    save_dir = os.path.join(args.savemodel, save_dir)
+    if temp_save == None:
+        temp_save = f"ego_autoencoder_{now}"
+    save_dir = os.path.join(args.savemodel, temp_save)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -219,8 +223,7 @@ def main(args):
     random.seed(args.seed)
     
     # Data load
-    dataset = "E:/Thesis/content/flow_dataset"
-    train_loader, validation_loader = make_data_loader(dataset, args)
+    train_loader, validation_loader = make_data_loader(args)
     
     # Make model
     model = EGOAutoEncoder(args.bn_type)

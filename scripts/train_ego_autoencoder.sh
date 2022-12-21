@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=./output/EgoAutoencoder
+RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder
 
 python tools/train_ego_autoencoder.py pre-train \
    --dataset sceneflow \
