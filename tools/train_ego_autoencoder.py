@@ -97,13 +97,8 @@ def make_flow_data_helper(args):
                     for img in os.listdir(os.path.join(driving_dir, focal, direction, speed)):
                         train_list.append(os.path.join(driving_dir, focal, direction, speed, img))
         
-        # Sintel training
-        sintel_dir = os.path.join(scene_dir, "sintel")
-        for dir in os.listdir(os.path.join(sintel_dir, "training")):
-            for img in os.listdir(os.path.join(sintel_dir, "training", dir)):
-                train_list.append(os.path.join(sintel_dir, "training", dir, img))
-
         # Sintel stereo
+        sintel_dir = os.path.join(scene_dir, "sintel")
         for dir in os.listdir(os.path.join(sintel_dir, "stereo")):
             for img in os.listdir(os.path.join(sintel_dir, "stereo", dir)):
                 train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
