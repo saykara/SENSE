@@ -1,8 +1,9 @@
-from sense.models.ego_autoencoder import EGOAutoEncoder
-from sense.models.ego_autoencoder import EGOEncoder
-from sense.models.ego_rnn import EgoRnn 
-from sense.datasets.ego_autoencoder_dataset import EGOFlowDataset
-from sense.utils.arguments import parse_args
+import os
+import sys
+import pickle
+import random
+from datetime import datetime
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -10,20 +11,36 @@ import torch.optim as optim
 import torchvision
 from torchvision import transforms
 
-import os
-import sys
-import cv2
-import math
-import pickle
-import random
-import imageio
-from datetime import datetime
-import numpy as np
-
+from sense.models.ego_autoencoder import EGOAutoEncoder
+from sense.models.ego_rnn import EgoRnn 
+from sense.models.unet import UNet
+from sense.utils.arguments import parse_args
+from sense.rigidity_refine.io_utils import read_camera_data
 import sense.models.model_utils as model_utils
-import sense.utils.kitti_viz as kitti_viz
 from sense.lib.nn import DataParallelWithCallback
+from .demo import run_holistic_scene_model, run_warped_disparity_refinement
 
+temp_save = None
+
+def pre_process(batch_data, holistic_scene_model, warp_disp_ref_model, encoder_model, camera_data):
+    result = []
+    for data in batch_data:
+        flow_raw, flow_occ, disp0, disp1_unwarped, seg = run_holistic_scene_model(
+	    	data[0], data[1],
+	    	data[2], data[3],
+	    	holistic_scene_model
+	    )
+
+        flow_rigid, disp1_raw, disp1_rigid, disp1_nn = run_warped_disparity_refinement(
+        	data[0],
+        	flow_raw, flow_occ,
+        	disp0, disp1_unwarped,
+        	seg,
+        	camera_data,
+        	warp_disp_ref_model
+        )
+        result.append([encoder_model(flow_rigid)[4], data[4]])
+    return result
 
 def make_data_helper(path):
     pass
@@ -50,32 +67,33 @@ def data_cacher(path):
 def make_data_loader(dataset, args):
     pass
 
-def train(model, optimizer, data, criteria, args):
+def train(model, optimizer, data, criteria, hn, cn):
     model.train()
     data = data.cuda()
     optimizer.zero_grad()
-    data_pred = model(data)
-    loss = criteria(data_pred, data)
+    data_pred = model(data[0], hn, cn)
+    loss = criteria(data_pred, data[1])
     loss.backward()
     optimizer.step()
     loss = loss.item()
-    return loss
+    return loss, hn, cn
 
 def validation(model, data, criteria):
     model.eval()
     data = data.cuda()
     
     with torch.no_grad():
-        data_pred = model(data)
-        loss = criteria(data_pred, data)
-    loss = loss.item()
-    return loss
+        data_pred = model(data[0])
+        loss = criteria(data_pred, data[1])
+    return loss.item()
         
 def save_checkpoint(model, optimizer, epoch, global_step, args):
     #SAVE
+    global temp_save
     now = datetime.now().strftime("%d-%m-%H-%M")
-    save_dir = f"lstm_{now}"
-    save_dir = os.path.join(args.savemodel, save_dir)
+    if temp_save == None:
+        temp_save = f"lstm_{now}"
+    save_dir = os.path.join(args.savemodel, temp_save)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -95,7 +113,7 @@ def main(args):
     np.random.seed(args.seed)  
     random.seed(args.seed)
     
-    # Flow producer model
+    # Flow producer model (PSMNexT)
     holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
     holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
     ckpt = torch.load(holistic_scene_model_path)
@@ -103,14 +121,28 @@ def main(args):
     holistic_scene_model.load_state_dict(state_dict)
     holistic_scene_model.eval()
     
-    # EGO encoder model
-    encoder_model = EGOEncoder("syncbn", "gelu")
-    encoder_model = DataParallelWithCallback(encoder_model).cuda()
-    encoder_model_path = '<path>'
-    ckpt = torch.load(encoder_model_path)
+    # Flow producer model
+    warp_disp_ref_model = UNet()
+    warp_disp_ref_model = nn.DataParallel(warp_disp_ref_model).cuda()
+    warp_disp_ref_model_path = 'data/pretrained_models/kitti2015_warp_disp_refine_1500.pth'
+    ckpt = torch.load(warp_disp_ref_model_path)
     state_dict = ckpt['state_dict']
-    encoder_model.load_state_dict(state_dict)
+    warp_disp_ref_model.load_state_dict(state_dict)
+    warp_disp_ref_model.eval()
+ 
+    # EGO encoder model
+    ego_model = EGOAutoEncoder("syncbn", "gelu")
+    ego_model_path = '<autoencoder path>'
+    ckpt = torch.load(ego_model_path)
+    state_dict = ckpt['state_dict']
+    ego_model.load_state_dict(state_dict)
+    encoder_model = ego_model.encoder
     encoder_model.eval()
+    
+    # TODO Figure out camera calibration 
+    # Camera parameters
+    camera_data = read_camera_data('<camera_path>')
+    camera_data = None
     
     # Data load
     dataset = "E:/Thesis/content/flow_dataset"
@@ -118,7 +150,7 @@ def main(args):
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
     # Make model
-    model = EgoRnn(4096)
+    model = EgoRnn(1024)
     print('Number of model parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()]))
     )
@@ -156,12 +188,17 @@ def main(args):
     start_epoch = 1
     global_step = 0
     lr = args.lr
+    
+    hn, cn = model.init_states(args.batch_size)
     train_start = datetime.now()
     for epoch in range(start_epoch, args.epochs + 1):
         epoch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
             batch_start = datetime.now()
-            train_loss = train(model, optimizer, batch_data, criteria, args)
+            lstm_data = pre_process(batch_data, holistic_scene_model, warp_disp_ref_model, encoder_model, camera_data)
+            train_loss, hn, cn = train(model, optimizer, lstm_data, criteria, hn, cn)
+            hn = hn.detach()
+            cn = cn.detach()
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
                 print(print_format.format(
@@ -171,8 +208,11 @@ def main(args):
 
         val_start = datetime.now()
         val_loss = 0
+        hn, cn = model.init_states(args.batch_size)
         for batch_idx, batch_data in enumerate(validation_loader):
-            val_loss += validation(model, batch_data, criteria)
+            lstm_data = pre_process(batch_data, holistic_scene_model, warp_disp_ref_model, encoder_model, camera_data)
+            temp_val, hn, cn = validation(model, lstm_data, criteria, hn, cn)
+            val_loss += temp_val
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
             val_loss /  len(validation_loader), str(datetime.now() - val_start), lr))
