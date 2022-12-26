@@ -17,11 +17,12 @@ class EgoRnn(nn.Module):
         self.linear1 = nn.Linear(hidden_dim, 128)
         self.linear2 = nn.Linear(128, 6)
 
-    def forward(self, x, hn, cn):
-        x = self.maxpool(x)
-        x, (hn, cn) = self.lstm(x, (hn, cn))
-        x = self.linear1(x)
-        x = self.linear2(x)
+    def forward(self, data, hn, cn):
+        for x in data:
+            x = self.maxpool(x)
+            x, (hn, cn) = self.lstm(x, (hn, cn))
+            x = self.linear1(x)
+            x = self.linear2(x)
         return x, hn, cn
 
     def init_states(self, batch_size):
