@@ -75,8 +75,8 @@ class NormalizeFlowOnly(object):
         self.std = std
 
     def __call__(self, flow):
-        flow[flow <= -120.0] = -119.99
-        flow[flow >=  120.0] =  119.99
+        flow[flow <= self.std[0]] = self.std[0] + 0.0001
+        flow[flow >= self.std[1]] = self.std[1] - 0.0001
         for c in range(2):
             flow[:,:,c] = (flow[:,:,c] - self.mean[c]) / self.std[c]
         return flow
