@@ -13,7 +13,7 @@ python tools/train_ego_autoencoder.py pre-train \
    --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 10 \
+   --epochs 80 \
    --bn-type syncbn \
    --batch-size 48 \
    --print-freq 20
