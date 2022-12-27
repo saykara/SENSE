@@ -104,15 +104,23 @@ def make_flow_data_helper(args):
                 train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
                 
     elif args.dataset == "kittimalaga":
-        raise NotImplementedError
-        # TODO Implement Kitti_vo and Malaga dataset loader 
-        #fly_train_dir = os.path.join(BASE_DIR, "flyingthings3d", "train")
-        #for img in os.listdir(fly_train_dir):
-        #    train_list.append(os.path.join(fly_train_dir, img))
+        kitti_dir = os.path.join(BASE_DIR, "kitti_vo")
+        kitti_seq_list = os.listdir(kitti_dir)
+        for seq in kitti_seq_list[5:]:
+            for img in os.listdir(os.path.join(kitti_dir, seq)):
+                train_list.append(os.path.join(kitti_dir, seq, img))
+        for seq in kitti_seq_list[:5]:
+            for img in os.listdir(os.path.join(kitti_dir, seq)):
+                val_list.append(os.path.join(kitti_dir, seq, img))
 
-        #fly_val_dir = os.path.join(BASE_DIR, "flyingthings3d", "val")
-        #for img in os.listdir(fly_val_dir):
-        #    val_list.append(os.path.join(fly_val_dir, img))
+        malaga_dir = os.path.join(BASE_DIR, "malaga")
+        malaga_seq_list = os.listdir(malaga_dir)
+        for seq in malaga_seq_list[:10]:
+            for img in os.listdir(os.path.join(malaga_dir, seq)):
+                train_list.append(os.path.join(malaga_dir, seq, img))
+        for seq in kitti_seq_list[10:]:
+            for img in os.listdir(os.path.join(malaga_dir, seq)):
+                val_list.append(os.path.join(malaga_dir, seq, img))
     
     else:
         raise f"Invalid dataset => {args.dataset}"
@@ -215,6 +223,13 @@ def save_checkpoint(model, optimizer, epoch, global_step, args):
             }, model_path)
         print('<=== checkpoint has been saved to {}.'.format(model_path))
 
+def adjust_learning_rate(optimizer, epoch, lr, rate):
+    if epoch % rate == 0:
+        lr *= 0.316
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+    return lr
+
 def main(args):
     torch.manual_seed(args.seed)    
     torch.cuda.manual_seed(args.seed)   
@@ -270,6 +285,7 @@ def main(args):
     lr = args.lr
     train_start = datetime.now()
     for epoch in range(start_epoch, args.epochs + 1):
+        lr = adjust_learning_rate(optimizer, epoch, lr, 20)
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
