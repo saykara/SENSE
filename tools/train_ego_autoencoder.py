@@ -109,7 +109,7 @@ def make_flow_data_helper(args):
         kitti_dir = os.path.join(BASE_DIR, "kitti_vo", "dataset", "sequences")
         kitti_seq_list = os.listdir(kitti_dir)
         kitti_seq_list.sort()
-        for seq in kitti_seq_list[5:]:
+        for seq in kitti_seq_list[3:]:
             l_root = os.path.join(kitti_dir, f"{seq}/image_2")
             r_root = os.path.join(kitti_dir, f"{seq}/image_3")
             left_img_list = os.listdir(l_root)
@@ -119,7 +119,7 @@ def make_flow_data_helper(args):
             for i in range(len(left_img_list) - 1):
                 train_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
                                    os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
-        for seq in kitti_seq_list[:5]:
+        for seq in kitti_seq_list[:3]:
             l_root = os.path.join(kitti_dir, f"{seq}/image_2")
             r_root = os.path.join(kitti_dir, f"{seq}/image_3")
             left_img_list = os.listdir(l_root)
@@ -133,14 +133,14 @@ def make_flow_data_helper(args):
         malaga_dir = os.path.join(BASE_DIR, "malaga")
         malaga_seq_list = os.listdir(malaga_dir)
         malaga_seq_list.sort()
-        for seq in malaga_seq_list[:10]:
+        for seq in malaga_seq_list[:12]:
             root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
             img_list = os.listdir(root)
             img_list.sort()
             for i in range(0, len(img_list) - 3, 2):
                 train_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
                                    os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
-        for seq in malaga_seq_list[10:]:
+        for seq in malaga_seq_list[12:]:
             root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
             img_list = os.listdir(root)
             img_list.sort()
@@ -214,7 +214,7 @@ def make_data_loader(args):
             #worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1)))
         ), torch.utils.data.DataLoader(
             test_set,
-            batch_size=2,
+            batch_size=args.batch_size,
             shuffle=False,
             num_workers=args.workers,
             drop_last=True,
