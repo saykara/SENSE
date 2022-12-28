@@ -3,7 +3,8 @@
 export PYTHONPATH=./
 
 RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoderTuned
-LOAD_DIR=/content/model.pth
+LOAD_DIR=/content/model_0040.pth
+
 
 python tools/train_ego_autoencoder.py finetune \
    --dataset kittimalaga \
@@ -16,7 +17,15 @@ python tools/train_ego_autoencoder.py finetune \
    --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 80 \
+   --epochs 40 \
    --bn-type syncbn \
-   --batch-size 4 \
-   --print-freq 20
+   --batch-size 36 \
+   --print-freq 20 \
+   --enc-arch psm \
+   --dec-arch pwcdc \
+   --disp-refinement hourglass \
+   --flow-dec-arch pwcdc \
+   --flow-no-ppm \
+   --flow-refinement none \
+   --maxdisp 192 \
+   --corr-radius 4

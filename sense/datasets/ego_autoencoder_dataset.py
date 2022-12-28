@@ -40,5 +40,35 @@ class EGOFlowDataset(data.Dataset):
             flo = self.transform(flo)
         #image = np.einsum('ijk->kji', image)
         return flo
+
+def imread(im_path, flag=1):
+    im = cv2.imread(im_path, flag)
+    im = im.astype(np.float32) / 255.0
+    return im
+
+class EGOAutoencoderImageDataset(data.Dataset):
+    def __init__(self, root, path_list, transform):
+        super(EGOAutoencoderImageDataset, self).__init__()
+        self.root = root
+        self.path_list = path_list
+        self.loader = imread
+        self.transform = transform
+        
+    def __len__(self):
+        return len(self.path_list)
+
+    def __getitem__(self, index):
+        cur_l = self.loader(self.path_list[index][0])
+        cur_r = self.loader(self.path_list[index][1])
+        nxt_l = self.loader(self.path_list[index][2])
+        nxt_r = self.loader(self.path_list[index][3])
+        
+        if self.transform:
+            cur_l = self.transform(cur_l)
+            cur_r = self.transform(cur_r)
+            nxt_l = self.transform(nxt_l)
+            nxt_r = self.transform(nxt_r)
+        #image = np.einsum('ijk->kji', image)
+        return cur_l, cur_r, nxt_l, nxt_r 
     
     
