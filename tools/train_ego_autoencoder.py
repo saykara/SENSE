@@ -22,7 +22,6 @@ import numpy as np
 import sense.datasets.flow_transforms as flow_transforms
 
 BASE_DIR='/content/dataset'
-VO_BASE_DIR='E:/Thesis/content/dataset'
 
 temp_save = None
 
@@ -107,7 +106,7 @@ def make_flow_data_helper(args):
                 train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
                 
     elif args.dataset == "kittimalaga":
-        kitti_dir = os.path.join(VO_BASE_DIR, "kitti_vo", "dataset", "sequences")
+        kitti_dir = os.path.join(BASE_DIR, "kitti_vo", "dataset", "sequences")
         kitti_seq_list = os.listdir(kitti_dir)
         kitti_seq_list.sort()
         for seq in kitti_seq_list[5:]:
@@ -131,7 +130,7 @@ def make_flow_data_helper(args):
                 val_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
                                  os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
 
-        malaga_dir = os.path.join(VO_BASE_DIR, "malaga")
+        malaga_dir = os.path.join(BASE_DIR, "malaga")
         malaga_seq_list = os.listdir(malaga_dir)
         malaga_seq_list.sort()
         for seq in malaga_seq_list[:10]:
@@ -197,7 +196,7 @@ def make_data_loader(args):
     print("Test data sample size: ", len(test_data))
     
     path = "E:/Thesis/content/flow_dataset" if args.dataset == "local" else "/content/flow_dataset"
-    path = VO_BASE_DIR if args.dataset == "kittimalaga" else "/content/flow_dataset"
+    path = BASE_DIR if args.dataset == "kittimalaga" else "/content/flow_dataset"
     if args.cmd == "finetune":
         train_set = EGOAutoencoderImageDataset(root=path, path_list=train_data, transform=transform)
         test_set = EGOAutoencoderImageDataset(root=path, path_list=test_data, transform=transform)
