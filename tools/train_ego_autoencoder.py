@@ -110,8 +110,8 @@ def make_flow_data_helper(args):
         kitti_seq_list = os.listdir(kitti_dir)
         kitti_seq_list.sort()
         for seq in kitti_seq_list[5:]:
-            l_root = os.path.join(kitti_dir, f"/{seq}/image_2")
-            r_root = os.path.join(kitti_dir, f"/{seq}/image_3")
+            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
+            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
             left_img_list = os.listdir(l_root)
             left_img_list.sort()
             right_img_list = os.listdir(r_root)
@@ -120,8 +120,8 @@ def make_flow_data_helper(args):
                 train_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
                                    os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
         for seq in kitti_seq_list[:5]:
-            l_root = os.path.join(kitti_dir, f"/{seq}/image_2")
-            r_root = os.path.join(kitti_dir, f"/{seq}/image_3")
+            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
+            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
             left_img_list = os.listdir(l_root)
             left_img_list.sort()
             right_img_list = os.listdir(r_root)
@@ -134,14 +134,14 @@ def make_flow_data_helper(args):
         malaga_seq_list = os.listdir(malaga_dir)
         malaga_seq_list.sort()
         for seq in malaga_seq_list[:10]:
-            root = os.path.join(malaga_dir, f"/{seq}", f"/{seq}_rectified_1024x768_Images")
+            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
             img_list = os.listdir(root)
             img_list.sort()
             for i in range(0, len(img_list) - 3, 2):
                 train_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
                                    os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
         for seq in kitti_seq_list[10:]:
-            root = os.path.join(malaga_dir, f"/{seq}", f"/{seq}_rectified_1024x768_Images")
+            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
             img_list = os.listdir(root)
             img_list.sort()
             for i in range(0, len(img_list) - 3, 2):
