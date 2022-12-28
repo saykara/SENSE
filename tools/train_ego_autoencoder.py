@@ -140,7 +140,7 @@ def make_flow_data_helper(args):
             for i in range(0, len(img_list) - 3, 2):
                 train_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
                                    os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
-        for seq in kitti_seq_list[10:]:
+        for seq in malaga_seq_list[10:]:
             root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
             img_list = os.listdir(root)
             img_list.sort()
