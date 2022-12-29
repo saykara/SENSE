@@ -4,6 +4,8 @@ from sense.utils.arguments import parse_args
 from sense.lib.nn import DataParallelWithCallback
 from tools.demo import warp_disp_refine_rigid, run_holistic_scene_model
 import sense.models.model_utils as model_utils
+from sense.models.dummy_scene import DummySceneNet
+from sense.datasets import kitti_vo, malaga
 
 import torch
 import torch.nn as nn
@@ -106,47 +108,55 @@ def make_flow_data_helper(args):
                 train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
                 
     elif args.dataset == "kittimalaga":
-        kitti_dir = os.path.join(BASE_DIR, "kitti_vo", "dataset", "sequences")
-        kitti_seq_list = os.listdir(kitti_dir)
-        kitti_seq_list.sort()
-        for seq in kitti_seq_list[3:]:
-            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
-            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
-            left_img_list = os.listdir(l_root)
-            left_img_list.sort()
-            right_img_list = os.listdir(r_root)
-            right_img_list.sort()
-            for i in range(len(left_img_list) - 1):
-                train_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
-                                   os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
-        for seq in kitti_seq_list[:3]:
-            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
-            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
-            left_img_list = os.listdir(l_root)
-            left_img_list.sort()
-            right_img_list = os.listdir(r_root)
-            right_img_list.sort()
-            for i in range(len(left_img_list) - 1):
-                val_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
-                                 os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
+#        kitti_dir = os.path.join(BASE_DIR, "kitti_vo", "dataset", "sequences")
+#        kitti_seq_list = os.listdir(kitti_dir)
+#        kitti_seq_list.sort()
+#        for seq in kitti_seq_list[3:]:
+#            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
+#            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
+#            left_img_list = os.listdir(l_root)
+#            left_img_list.sort()
+#            right_img_list = os.listdir(r_root)
+#            right_img_list.sort()
+#            for i in range(len(left_img_list) - 1):
+#                train_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
+#                                   os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
+#        for seq in kitti_seq_list[:3]:
+#            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
+#            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
+#            left_img_list = os.listdir(l_root)
+#            left_img_list.sort()
+#            right_img_list = os.listdir(r_root)
+#            right_img_list.sort()
+#            for i in range(len(left_img_list) - 1):
+#                val_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
+#                                 os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i #+ 1])])
 
+#        malaga_dir = os.path.join(BASE_DIR, "malaga")
+#        malaga_seq_list = os.listdir(malaga_dir)
+#        malaga_seq_list.sort()
+#        for seq in malaga_seq_list[:12]:
+#            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
+#            img_list = os.listdir(root)
+#            img_list.sort()
+#            for i in range(0, len(img_list) - 3, 2):
+#                train_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
+#                                   os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
+#        for seq in malaga_seq_list[12:]:
+#            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
+#            img_list = os.listdir(root)
+#            img_list.sort()
+#            for i in range(0, len(img_list) - 3, 2):
+#                val_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
+#                                 os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
+        kitti_dir = os.path.join(BASE_DIR, "kitti_vo")
         malaga_dir = os.path.join(BASE_DIR, "malaga")
-        malaga_seq_list = os.listdir(malaga_dir)
-        malaga_seq_list.sort()
-        for seq in malaga_seq_list[:12]:
-            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
-            img_list = os.listdir(root)
-            img_list.sort()
-            for i in range(0, len(img_list) - 3, 2):
-                train_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
-                                   os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
-        for seq in malaga_seq_list[12:]:
-            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
-            img_list = os.listdir(root)
-            img_list.sort()
-            for i in range(0, len(img_list) - 3, 2):
-                val_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
-                                 os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
+        kitti_train_sequences = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        kitti_train, kitti_test = kitti_vo.kitti_vo_flow_data_helper(kitti_dir, kitti_train_sequences)
+        malaga_train, malaga_test = malaga.malaga_flow_data_helper(malaga_dir, malaga_train_sequences)
+        train_list = kitti_train + malaga_train
+        val_list = kitti_test + malaga_test
     
     else:
         raise f"Invalid dataset => {args.dataset}"
@@ -223,7 +233,6 @@ def make_data_loader(args):
 
 def train(model, optimizer, data, criteria, args):
     model.train()
-    data = Variable(data).cuda()
     data_pred = model(data)
     loss = criteria(data_pred, data)
     optimizer.zero_grad()
@@ -382,8 +391,8 @@ def tune(args):
     
     # Data load
     train_loader, validation_loader = make_data_loader(args)
-    
-    holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
+    holistic_scene_model = DataParallelWithCallback(DummySceneNet(args)).cuda()
+    #holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
     # print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
     holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
     ckpt = torch.load(holistic_scene_model_path)
@@ -443,7 +452,8 @@ def tune(args):
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
-            preprocessed_batch = [preprocess_data(x, holistic_scene_model, tf) for x in batch_data]
+            batch_data = Variable(batch_data).cuda()
+            preprocessed_batch = holistic_scene_model(batch_data)
             tensor_data = torch.stack(preprocessed_batch)
             train_loss = train(model, optimizer, tensor_data, criteria, args)
             global_step += 1
@@ -457,7 +467,8 @@ def tune(args):
         val_start = datetime.now()
         val_loss = 0
         for batch_idx, batch_data in enumerate(validation_loader):
-            preprocessed_batch = [preprocess_data(x, holistic_scene_model) for x in batch_data]
+            batch_data = Variable(batch_data).cuda()
+            preprocessed_batch = holistic_scene_model(batch_data)
             tensor_data = torch.stack(preprocessed_batch)
             val_loss += validation(model, tensor_data, criteria)
         print(print_format.format(

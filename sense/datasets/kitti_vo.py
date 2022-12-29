@@ -80,3 +80,20 @@ def kitti_vo_data_helper(path, train_sequences):
             sequence.append(calib)
             kitti_vo_train.append(sequence) if i in train_sequences else kitti_vo_test.append(sequence)
     return kitti_vo_train, kitti_vo_test
+
+def kitti_vo_flow_data_helper(path, train_sequences):
+    kitti_vo_train = []
+    kitti_vo_test = []
+    pose_list = load_pose(os.path.join(path, "dataset", "poses"))
+    for i in range(len(pose_list)):
+        calib = load_calib(os.path.join(path, "dataset", "sequences", f"{i:02}"))
+        left_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2"))
+        right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
+        for j in range(len(left_img_list) - 1):
+            cur_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j ])
+            cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j])
+            nxt_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j + 1])
+            nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + 1])
+            item = [cur_left, cur_right, nxt_left, nxt_right, calib]
+            kitti_vo_train.append(item) if i in train_sequences else kitti_vo_test.append(item)
+    return kitti_vo_train, kitti_vo_test
