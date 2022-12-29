@@ -59,16 +59,11 @@ class EGOAutoencoderImageDataset(data.Dataset):
 
     def __getitem__(self, index):
         cur_l = self.loader(self.path_list[index][0])
-        cur_r = self.loader(self.path_list[index][1])
-        nxt_l = self.loader(self.path_list[index][2])
-        nxt_r = self.loader(self.path_list[index][3])
-        
+        nxt_l = self.loader(self.path_list[index][1])
         if self.transform:
             cur_l = self.transform(cur_l)
-            cur_r = self.transform(cur_r)
             nxt_l = self.transform(nxt_l)
-            nxt_r = self.transform(nxt_r)
         #image = np.einsum('ijk->kji', image)
-        return cur_l, cur_r, nxt_l, nxt_r 
+        return cur_l, nxt_l
     
     

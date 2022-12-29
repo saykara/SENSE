@@ -64,8 +64,9 @@ def malaga_data_helper(path, train_sequences):
     sequence_list = os.listdir(path)
     for seq in sequence_list:
         calib = load_calib(os.path.join(path, seq, "camera_params_rectified_a=0_1024x768.txt"))
-        image_list = load_image_list(os.path.join(path, seq, seq + "_all-sensors_IMAGES.txt"))
+        image_list = os.listdir(os.path.join(path, seq, seq + "_rectified_1024x768_Images"))
         pose_list = load_pose(os.path.join(path, seq, seq + "_all-sensors_IMU.txt"))
+        pose_list.sort()
         for j in range(0, len(image_list) - 12, 2):
             sequence = []
             for k in range(0, 5, 2):
@@ -85,12 +86,13 @@ def malaga_flow_data_helper(path, train_sequences):
     sequence_list = os.listdir(path)
     for seq in sequence_list:
         calib = load_calib(os.path.join(path, seq, "camera_params_rectified_a=0_1024x768.txt"))
-        image_list = load_image_list(os.path.join(path, seq, seq + "_all-sensors_IMAGES.txt"))
-        for j in range(0, len(image_list) - 2, 2):
+        image_list = os.listdir(os.path.join(path, seq, seq + "_rectified_1024x768_Images"))
+        image_list.sort()
+        for j in range(0, len(image_list) - 4, 2):
             cur_left = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j])
             cur_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + 1])
             nxt_left = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + 2])
             nxt_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + 3])
-            item = [cur_left, cur_right, nxt_left, nxt_right, calib]
+            item = [cur_left, nxt_left]
             malaga_train.append(item) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(item)
     return malaga_train, malaga_test

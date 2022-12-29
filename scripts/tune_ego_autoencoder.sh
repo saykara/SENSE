@@ -19,7 +19,7 @@ python tools/train_ego_autoencoder.py finetune \
    --lr-gamma 0.1 \
    --epochs 40 \
    --bn-type syncbn \
-   --batch-size 36 \
+   --batch-size 3 \
    --print-freq 20 \
    --enc-arch psm \
    --dec-arch pwcdc \

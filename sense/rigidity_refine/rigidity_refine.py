@@ -122,7 +122,7 @@ def warp_disp_refine_rigid(disp0, disp1, flow, seg, K0, K1):
     inliers = np.ones(disp0.shape).astype(bool)
     for label in outlier_mask: 
         inliers *= (seg != label)
-
+    print(inliers.shape)
     # erode the background region to ensure the foreground is preserved as much as possible
     inliers = erosion(inliers, square(20))
 

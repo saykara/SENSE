@@ -4,7 +4,7 @@ from sense.utils.arguments import parse_args
 from sense.lib.nn import DataParallelWithCallback
 from tools.demo import warp_disp_refine_rigid, run_holistic_scene_model
 import sense.models.model_utils as model_utils
-from sense.models.dummy_scene import DummySceneNet
+from sense.models.dummy_scene import SceneNet
 from sense.datasets import kitti_vo, malaga
 
 import torch
@@ -152,7 +152,7 @@ def make_flow_data_helper(args):
         kitti_dir = os.path.join(BASE_DIR, "kitti_vo")
         malaga_dir = os.path.join(BASE_DIR, "malaga")
         kitti_train_sequences = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
-        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         kitti_train, kitti_test = kitti_vo.kitti_vo_flow_data_helper(kitti_dir, kitti_train_sequences)
         malaga_train, malaga_test = malaga.malaga_flow_data_helper(malaga_dir, malaga_train_sequences)
         train_list = kitti_train + malaga_train
@@ -391,7 +391,7 @@ def tune(args):
     
     # Data load
     train_loader, validation_loader = make_data_loader(args)
-    holistic_scene_model = DataParallelWithCallback(DummySceneNet(args)).cuda()
+    holistic_scene_model = DataParallelWithCallback(SceneNet(args)).cuda()
     #holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
     # print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
     holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
@@ -452,10 +452,8 @@ def tune(args):
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
-            batch_data = Variable(batch_data).cuda()
             preprocessed_batch = holistic_scene_model(batch_data)
-            tensor_data = torch.stack(preprocessed_batch)
-            train_loss = train(model, optimizer, tensor_data, criteria, args)
+            train_loss = train(model, optimizer, preprocessed_batch, criteria, args)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
                 print(print_format.format(
@@ -467,10 +465,8 @@ def tune(args):
         val_start = datetime.now()
         val_loss = 0
         for batch_idx, batch_data in enumerate(validation_loader):
-            batch_data = Variable(batch_data).cuda()
             preprocessed_batch = holistic_scene_model(batch_data)
-            tensor_data = torch.stack(preprocessed_batch)
-            val_loss += validation(model, tensor_data, criteria)
+            val_loss += validation(model, batch_data, criteria)
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
             val_loss /  len(validation_loader), str(datetime.now() - val_start), lr))

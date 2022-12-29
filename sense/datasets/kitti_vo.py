@@ -2,7 +2,7 @@ import os
 import cv2
 import torch
 import numpy as np
-from scipy.spatial.transform import euler_from_matrix
+import tensorflow as tf
 
 def matrix_to_pose(pose):
     # Convert array to 3x4 numpy array
@@ -20,7 +20,7 @@ def matrix_to_pose(pose):
     # quat[2] = (rotation[0, 2] - rotation[2, 0]) / (4 * quat[0])
     # quat[3] = (rotation[1, 0] - rotation[0, 1]) / (4 * quat[0])
 
-    yaw, pitch, roll = euler_from_matrix(rotation, 'xyz')
+    yaw, pitch, roll = tf.transformations.euler_from_matrix(rotation, 'sxyz')
     # Concatenate the translation and quaternion to form the 6-dimensional pose
     return np.concatenate((translation, yaw, pitch, roll))
 
@@ -68,7 +68,9 @@ def kitti_vo_data_helper(path, train_sequences):
     for i in range(len(pose_list)):
         calib = load_calib(os.path.join(path, "dataset", "sequences", f"{i:02}"))
         left_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2"))
+        left_img_list.sort()
         right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
+        right_img_list.sort()
         for j in range(len(left_img_list) - 6):
             sequence = []
             for k in range(5):
@@ -84,16 +86,18 @@ def kitti_vo_data_helper(path, train_sequences):
 def kitti_vo_flow_data_helper(path, train_sequences):
     kitti_vo_train = []
     kitti_vo_test = []
-    pose_list = load_pose(os.path.join(path, "dataset", "poses"))
-    for i in range(len(pose_list)):
+    seq_list = os.listdir(os.path.join(path, "dataset", "sequences"))
+    for i in range(len(seq_list)):
         calib = load_calib(os.path.join(path, "dataset", "sequences", f"{i:02}"))
         left_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2"))
+        left_img_list.sort()
         right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
+        right_img_list.sort()
         for j in range(len(left_img_list) - 1):
-            cur_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j ])
+            cur_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j])
             cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j])
             nxt_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j + 1])
             nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + 1])
-            item = [cur_left, cur_right, nxt_left, nxt_right, calib]
+            item = [cur_left, nxt_left]
             kitti_vo_train.append(item) if i in train_sequences else kitti_vo_test.append(item)
     return kitti_vo_train, kitti_vo_test
