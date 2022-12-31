@@ -78,7 +78,7 @@ class SceneNet(nn.Module):
 
     def forward(self, input):
         for i in range(2):
-          input[i] = input[i].transpose(2, 3)
+            input[i] = input[i].transpose(2, 3)
         cur_l = self.encoder(input[0])
         nxt_l = self.encoder(input[1])
         if self.flow_with_ppm:
@@ -90,7 +90,5 @@ class SceneNet(nn.Module):
         flow_multi_scale = self.flow_decoder(cur_x_, nxt_x_)
 
         flow = flow_multi_scale[0][0] * 20
-        print_max_min(torch.max(flow).item())
-        print_max_min(torch.min(flow).item())
 
         return flow / 400.
