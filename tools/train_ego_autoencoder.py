@@ -27,24 +27,6 @@ BASE_DIR='/content/dataset'
 
 temp_save = None
 
-def write_flo(filename, flow):
-    """
-    write optical flow in Middlebury .flo format
-    :param flow: optical flow map
-    :param filename: optical flow file path to be saved
-    :return: None
-    """
-    f = open(filename, 'wb')
-    magic = np.array([202021.25], dtype=np.float32)
-    (height, width) = flow.shape[0:2]
-    w = np.array([width], dtype=np.int32)
-    h = np.array([height], dtype=np.int32)
-    magic.tofile(f)
-    w.tofile(f)
-    h.tofile(f)
-    flow.tofile(f)
-    f.close() 
-    
 # https://discuss.pytorch.org/t/rmsle-loss-function/67281/2
 class RMSLELoss(nn.Module):
     def __init__(self):
@@ -108,47 +90,6 @@ def make_flow_data_helper(args):
                 train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
                 
     elif args.dataset == "kittimalaga":
-#        kitti_dir = os.path.join(BASE_DIR, "kitti_vo", "dataset", "sequences")
-#        kitti_seq_list = os.listdir(kitti_dir)
-#        kitti_seq_list.sort()
-#        for seq in kitti_seq_list[3:]:
-#            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
-#            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
-#            left_img_list = os.listdir(l_root)
-#            left_img_list.sort()
-#            right_img_list = os.listdir(r_root)
-#            right_img_list.sort()
-#            for i in range(len(left_img_list) - 1):
-#                train_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
-#                                   os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i + 1])])
-#        for seq in kitti_seq_list[:3]:
-#            l_root = os.path.join(kitti_dir, f"{seq}/image_2")
-#            r_root = os.path.join(kitti_dir, f"{seq}/image_3")
-#            left_img_list = os.listdir(l_root)
-#            left_img_list.sort()
-#            right_img_list = os.listdir(r_root)
-#            right_img_list.sort()
-#            for i in range(len(left_img_list) - 1):
-#                val_list.append([os.path.join(l_root,left_img_list[i]), os.path.join(r_root, right_img_list[i]), 
-#                                 os.path.join(l_root, left_img_list[i + 1]), os.path.join(r_root, right_img_list[i #+ 1])])
-
-#        malaga_dir = os.path.join(BASE_DIR, "malaga")
-#        malaga_seq_list = os.listdir(malaga_dir)
-#        malaga_seq_list.sort()
-#        for seq in malaga_seq_list[:12]:
-#            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
-#            img_list = os.listdir(root)
-#            img_list.sort()
-#            for i in range(0, len(img_list) - 3, 2):
-#                train_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
-#                                   os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
-#        for seq in malaga_seq_list[12:]:
-#            root = os.path.join(malaga_dir, f"{seq}", f"{seq}_rectified_1024x768_Images")
-#            img_list = os.listdir(root)
-#            img_list.sort()
-#            for i in range(0, len(img_list) - 3, 2):
-#                val_list.append([os.path.join(root, img_list[i]), os.path.join(root, img_list[i + 1]), 
-#                                 os.path.join(root, img_list[i + 2]), os.path.join(root, img_list[i + 3])])
         kitti_dir = os.path.join(BASE_DIR, "kitti_vo")
         malaga_dir = os.path.join(BASE_DIR, "malaga")
         kitti_train_sequences = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
@@ -183,23 +124,27 @@ def data_cacher(args):
                 f, pickle.HIGHEST_PROTOCOL)
     return train_data, test_data
     
-def make_data_loader(args):
+def make_data_loader(model, args):
     height_new = args.flow_crop_imh
     width_new = args.flow_crop_imw
 
     if args.cmd == "finetune":
         transform = transforms.Compose([
         flow_transforms.ArrayToTensor(),
-        transforms.Resize((1280, 384)),
+        transforms.Resize((384, 1280)),
         transforms.RandomHorizontalFlip(0.3),
         transforms.RandomVerticalFlip(0.3)])
+        
+        flow_transform = transforms.Compose([
+            #flow_transforms.ArrayToTensor(),
+           flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-360.0, 360.0])])
     else:
         transform = transforms.Compose([
-           flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-400.0, 400.0]),
-           flow_transforms.ArrayToTensor(),
-           transforms.RandomResizedCrop((height_new, width_new)),
-           transforms.RandomHorizontalFlip(0.3),
-           transforms.RandomVerticalFlip(0.3)]) 
+            flow_transforms.ArrayToTensor(),
+            flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-800.0, 800.0]),
+            transforms.RandomResizedCrop((height_new, width_new)),
+            transforms.RandomHorizontalFlip(0.3),
+            transforms.RandomVerticalFlip(0.3)]) 
      
     train_data, test_data = data_cacher(args)
     print("Train data sample size: ", len(train_data))
@@ -208,8 +153,8 @@ def make_data_loader(args):
     path = "E:/Thesis/content/flow_dataset" if args.dataset == "local" else "/content/flow_dataset"
     path = BASE_DIR if args.dataset == "kittimalaga" else "/content/flow_dataset"
     if args.cmd == "finetune":
-        train_set = EGOAutoencoderImageDataset(root=path, path_list=train_data, transform=transform)
-        test_set = EGOAutoencoderImageDataset(root=path, path_list=test_data, transform=transform)
+        train_set = EGOAutoencoderImageDataset(root=path, path_list=train_data, transform=transform, flow_transform=flow_transform, model=model)
+        test_set = EGOAutoencoderImageDataset(root=path, path_list=test_data, transform=transform, flow_transform=flow_transform, model=model)
     else:
         train_set = EGOFlowDataset(root=path, path_list=train_data, transform=transform)
         test_set = EGOFlowDataset(root=path, path_list=test_data, transform=transform)
@@ -220,7 +165,7 @@ def make_data_loader(args):
             shuffle=True,
             num_workers=args.workers,
             drop_last=True,
-            pin_memory=True,
+            pin_memory=False,
             #worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1)))
         ), torch.utils.data.DataLoader(
             test_set,
@@ -228,7 +173,7 @@ def make_data_loader(args):
             shuffle=False,
             num_workers=args.workers,
             drop_last=True,
-            pin_memory=True
+            pin_memory=False
         )
 
 def train(model, optimizer, data, criteria, args):
@@ -250,7 +195,7 @@ def validation(model, data, criteria):
     loss = loss.item()
     return loss
         
-def save_checkpoint(model, optimizer, epoch, global_step, args):
+def save_checkpoint(model, optimizer, epoch, flag, args):
     #SAVE
     global temp_save
     now = datetime.now().strftime("%d-%m-%H-%M")
@@ -261,6 +206,8 @@ def save_checkpoint(model, optimizer, epoch, global_step, args):
         os.makedirs(save_dir)
 
     model_path = os.path.join(save_dir, 'model_{:04d}.pth'.format(epoch))
+    if flag:
+        model_path = os.path.join(save_dir, 'model_enc.pth'.format(epoch))
 
     if epoch % args.save_freq == 0:
         torch.save({
@@ -284,10 +231,10 @@ def main(args):
     random.seed(args.seed)
     
     # Data load
-    train_loader, validation_loader = make_data_loader(args)
+    train_loader, validation_loader = make_data_loader(None, args)
     
     # Make model
-    model = EGOAutoEncoder(args.bn_type)
+    model = EGOAutoEncoder(args)
     
     if args.bn_type == 'plain':
         model = torch.nn.DataParallel(model).cuda()
@@ -355,33 +302,9 @@ def main(args):
             
         # Save model
         print(f'Epoch {epoch} elapsed time => {str(datetime.now() - epoch_start)}')
-        save_checkpoint(model, optimizer, epoch, global_step, args)
+        save_checkpoint(model, optimizer, epoch, False, args)
     print(f'Train elapsed time => {str(datetime.now() - train_start)}')
-
-class Norm:
-    def __init__(self, mean, std) -> None:
-        self.mean = mean
-        self.std = std
-        
-    def __call__(self, flow):
-        flow = np.where(flow <= self.std[0], self.std[0] + 0.0001, flow)
-        flow = np.where(flow >= self.std[1], self.std[1] - 0.0001, flow)
-        flow = (flow - self.mean[0]) / self.std[1]
-        return flow
-
-def preprocess_data(image, model, tf):
-    cur_left_im = image[0].unsqueeze(0).transpose(2, 3)
-    cur_right_im = image[1].unsqueeze(0).transpose(2, 3)
-    nxt_left_im = image[2].unsqueeze(0).transpose(2, 3)
-    with torch.no_grad():
-        flow_pred, _, _ = model(
-        	cur_left_im, 
-        	nxt_left_im, 
-        	cur_right_im)
-        flow = flow_pred[0][0] * args.div_flow
-    flow = torch.squeeze(flow)
-    flow = tf(flow.cpu())
-    return torch.Tensor(flow)
+    save_checkpoint(model.module.encoder, optimizer, epoch, True, args)
     
 def tune(args):
     torch.manual_seed(args.seed)    
@@ -389,8 +312,6 @@ def tune(args):
     np.random.seed(args.seed)  
     random.seed(args.seed)
     
-    # Data load
-    train_loader, validation_loader = make_data_loader(args)
     holistic_scene_model = DataParallelWithCallback(SceneNet(args)).cuda()
     #holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
     # print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
@@ -399,11 +320,12 @@ def tune(args):
     state_dict = model_utils.patch_model_state_dict(ckpt['state_dict'])
     holistic_scene_model.load_state_dict(state_dict)
     holistic_scene_model.eval()
-        
-    # Make model
-    model = EGOAutoEncoder(args.bn_type)
     
-    tf = Norm(mean=[0,0],std=[-380.0, 380.0])
+    # Data load
+    train_loader, validation_loader = make_data_loader(holistic_scene_model, args)
+    
+    # Make model
+    model = EGOAutoEncoder(args)
     
     if args.bn_type == 'plain':
         model = torch.nn.DataParallel(model).cuda()
@@ -452,8 +374,7 @@ def tune(args):
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
-            preprocessed_batch = holistic_scene_model(batch_data)
-            train_loss = train(model, optimizer, preprocessed_batch, criteria, args)
+            train_loss = train(model, optimizer, batch_data, criteria, args)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
                 print(print_format.format(
@@ -465,7 +386,6 @@ def tune(args):
         val_start = datetime.now()
         val_loss = 0
         for batch_idx, batch_data in enumerate(validation_loader):
-            preprocessed_batch = holistic_scene_model(batch_data)
             val_loss += validation(model, batch_data, criteria)
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
@@ -473,9 +393,9 @@ def tune(args):
             
         # Save model
         print(f'Epoch {epoch} elapsed time => {str(datetime.now() - epoch_start)}')
-        save_checkpoint(model, optimizer, epoch, global_step, args)
+        save_checkpoint(model, optimizer, epoch, False, args)
     print(f'Train elapsed time => {str(datetime.now() - train_start)}')
-
+    save_checkpoint(model.module.encoder, optimizer, epoch, True, args)
 
 if __name__ == '__main__':
     parser = parse_args()
