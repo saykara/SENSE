@@ -2,7 +2,8 @@ import os
 import cv2
 import torch
 import numpy as np
-import tensorflow as tf
+from math import atan2, sqrt, asin, cos, pi
+from scipy.spatial.transform import Rotation
 
 def matrix_to_pose(pose):
     # Convert array to 3x4 numpy array
@@ -13,28 +14,35 @@ def matrix_to_pose(pose):
     translation = matrix[:3, 3]
     rotation = matrix[:3, :3]
 
-    # # Convert the rotation matrix to a quaternion representation
-    # quat = np.zeros(4)
-    # quat[0] = np.sqrt(1 + rotation[0, 0] + rotation[1, 1] + rotation[2, 2]) / 2
-    # quat[1] = (rotation[2, 1] - rotation[1, 2]) / (4 * quat[0])
-    # quat[2] = (rotation[0, 2] - rotation[2, 0]) / (4 * quat[0])
-    # quat[3] = (rotation[1, 0] - rotation[0, 1]) / (4 * quat[0])
+    if rotation[2,0] != 1 and rotation[2,0] != -1:
+        pitch = -asin(rotation[2,0])
+        roll = atan2(rotation[2,1]/cos(pitch), rotation[2,2]/cos(pitch))
+        yaw = atan2(rotation[1,0]/cos(pitch), rotation[0,0]/cos(pitch))
+    else:
+        yaw = 0
+        if rotation[2,0] == -1:
+            pitch = pi/2
+            roll = yaw + atan2(rotation[0,1], rotation[0,2])
+        else:
+            pitch = -pi/2
+            roll = -yaw + atan2(-rotation[0,1], -rotation[0,2])
 
-    yaw, pitch, roll = tf.transformations.euler_from_matrix(rotation, 'sxyz')
-    # Concatenate the translation and quaternion to form the 6-dimensional pose
-    return np.concatenate((translation, yaw, pitch, roll))
+    return np.concatenate((translation, [roll, pitch, yaw]))
 
 def load_pose(path):
-    poses = []
+    poses = {}
     # Iterate over the pose files in the dataset
     for dirpath, _, filenames in os.walk(path):
         for f in filenames:
             if f.endswith('.txt'):
                 # Load the pose data from the current file
                 with open(os.path.join(dirpath, f), 'r') as pose_file:
-                    pose = [float(x) for x in pose_file.readline().split()]
+                    lines = pose_file.readlines()
+                    pose = []
+                    for line in lines:
+                        pose.append([float(x) for x in line.split()])
                 # Add the pose data to the list
-                poses.append(pose)
+                poses[f.split(".")[0]] = pose
     return poses
 
 def calc_pose_diff(cur_pose, next_pose):
@@ -64,22 +72,31 @@ def load_calib(path):
 def kitti_vo_data_helper(path, train_sequences):
     kitti_vo_train = []
     kitti_vo_test = []
-    pose_list = load_pose(os.path.join(path, "dataset", "poses"))
-    for i in range(len(pose_list)):
-        calib = load_calib(os.path.join(path, "dataset", "sequences", f"{i:02}"))
-        left_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2"))
+    
+    #base_dir = os.path.join(path, "kitti_vo", "dataset")
+    base_dir = path + "/kitti_vo" + "/dataset"
+    # pose_list = load_pose(os.path.join(base_dir, "poses"))
+    pose_list = load_pose(base_dir + "/poses")
+    for i in range(len(pose_list.keys())):
+        # calib = load_calib(os.path.join(base_dir, "sequences", f"{i:02}"))
+        # left_img_list = os.listdir(os.path.join(base_dir, "dataset", "sequences", f"{i:02}", "image_2"))
+        left_img_list = os.listdir(base_dir + "/sequences"+ f"/{i:02}" + "/image_2")
         left_img_list.sort()
-        right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
-        right_img_list.sort()
-        for j in range(len(left_img_list) - 6):
+        # right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
+        # right_img_list.sort()
+        for j in range(len(left_img_list) - 5):
             sequence = []
             for k in range(5):
-                cur_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j + k])
-                cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k])
-                nxt_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j + k + 1])
-                nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k + 1])
-                sequence.append([cur_left, cur_right, nxt_left, nxt_right, calc_pose_diff(pose_list[i][j + k], pose_list[i][j + k + 1])])
-            sequence.append(calib)
+                # cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k])
+                cur_left = base_dir + "/sequences" + f"/{i:02}" + "/image_2/" + left_img_list[j + k]
+                # cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k])
+                # nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k + 1])
+                nxt_left = base_dir + "/sequences" + f"/{i:02}" + "/image_2/" + left_img_list[j + k + 1]
+                # nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k + 1])
+                sequence.append([cur_left, nxt_left])
+            sequence.append(calc_pose_diff(pose_list.get(f"{i:02}")[j], pose_list.get(f"{i:02}")[j + 4]))
+            sequence.append("K")
+            # sequence.append(calib)
             kitti_vo_train.append(sequence) if i in train_sequences else kitti_vo_test.append(sequence)
     return kitti_vo_train, kitti_vo_test
 
