@@ -59,25 +59,20 @@ def malaga_data_helper(path, train_sequences):
     malaga_train = []
     malaga_test = []
     
-    #base_dir = os.path.join(path, "malaga")
-    base_dir = path + "/malaga"
+    base_dir = os.path.join(path, "malaga")
     sequence_list = os.listdir(base_dir)
     for seq in sequence_list:
         # calib = load_calib(os.path.join(path, seq, "camera_params_rectified_a=0_1024x768.txt"))
-        # image_list = os.listdir(os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images"))
-        image_list = os.listdir(base_dir + "/" + seq + "/" + seq + "_rectified_1024x768_Images")
-        # pose_list = load_pose(os.path.join(base_dir, seq, seq + "_all-sensors_IMU.txt"))
-        pose_list = load_pose(base_dir + "/" + seq + "/" + seq + "_all-sensors_IMU.txt")
+        image_list = os.listdir(os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images"))
+        pose_list = load_pose(os.path.join(base_dir, seq, seq + "_all-sensors_IMU.txt"))
         image_list.sort()
         for j in range(0, len(image_list) - 20, 2):
             sequence = []
             pose = np.empty([6], dtype = float)
             for k in range(0, 10, 2):
-                # cur_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k])
-                cur_left = base_dir + "/" + seq + "/" + seq + "_rectified_1024x768_Images/" + image_list[j + k]
+                cur_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k])
                 # cur_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 1])
-                # nxt_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 2])
-                nxt_left = base_dir + "/" + seq + "/" + seq + "_rectified_1024x768_Images/" +image_list[j + k + 2]
+                nxt_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 2])
                 # nxt_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 3])
                 sequence.append([cur_left, nxt_left])
                 pose += calc_pose_diff(pose_list, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])
