@@ -69,6 +69,8 @@ def parse_args():
 						help='directory to save those visualization results')
 	parser.add_argument('--bn-type', default='plain', choices=['plain', 'syncbn', 'encoding'],
 						help='bantch normalization layer type.')
+	parser.add_argument('--act-type', default='gelu', choices=['relu', 'gelu'],
+						help='bantch normalization layer type.')
 	parser.add_argument('--no-occ', action='store_true',
 						help='no occlusion prediction.')
 	parser.add_argument('--cat-occ', action='store_true',
@@ -152,4 +154,8 @@ def parse_args():
 						help='filter size of convolution.')
 	parser.add_argument('--dec-kernel-size', default=3, type=int,
 						help='filter size of decoders.')
+ 
+	parser.add_argument('--ego-enc',
+						help='architecture of the encoder')
+ 
 	return parser

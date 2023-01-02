@@ -27,20 +27,20 @@ def weight_init(self):
                     raise Exception('There should be no nn.BatchNorm2d layers.')
                 
 class EGOEncoder(nn.Module):
-    def __init__(self, bn_type, act_type):
+    def __init__(self, args):
         super(EGOEncoder, self).__init__()
-        self.conv1    = convbn(  2,   64, kernel_size=7, stride=2, padding=3, bn_type=bn_type, act_type=act_type)
-        self.conv2    = convbn( 64,  128, kernel_size=5, stride=2, padding=2, bn_type=bn_type, act_type=act_type)
-        self.conv3    = convbn(128,  256, kernel_size=5, stride=2, padding=2, bn_type=bn_type, act_type=act_type)
-        self.conv3_1  = convbn(256,  256, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
-        self.conv4    = convbn(256,  512, kernel_size=3, stride=2, padding=1, bn_type=bn_type, act_type=act_type)
-        self.conv4_1  = convbn(512,  512, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
-        self.conv5    = convbn(512,  512, kernel_size=3, stride=2, padding=1, bn_type=bn_type, act_type=act_type)
-        self.conv5_1  = convbn(512,  512, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
-        self.conv6    = convbn(512, 1024, kernel_size=3, stride=2, padding=1, bn_type=bn_type, act_type=act_type)
+        self.conv1   = convbn(  2,   64, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv2   = convbn( 64,  128, kernel_size=5, stride=2, padding=2, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv3   = convbn(128,  256, kernel_size=5, stride=2, padding=2, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv3_1 = convbn(256,  256, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv4   = convbn(256,  512, kernel_size=3, stride=2, padding=1, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv4_1 = convbn(512,  512, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv5   = convbn(512,  512, kernel_size=3, stride=2, padding=1, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv5_1 = convbn(512,  512, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
+        self.conv6   = convbn(512, 1024, kernel_size=3, stride=2, padding=1, bn_type=args.bn_type, act_type=args.act_type)
         
-        self.bn_type = bn_type
-        self.act_type = act_type
+        self.bn_type = args.bn_type
+        self.act_type = args.act_type
         
         weight_init(self)
         
@@ -55,22 +55,22 @@ class EGOEncoder(nn.Module):
     
 
 class EGODecoder(nn.Module):
-    def __init__(self, bn_type, act_type):
+    def __init__(self, args):
         super(EGODecoder, self).__init__()
         self.deconv5 = deconv(1024, 512, kernel_size=4, stride=2, padding=1)
-        self.flow5   = convbn(1024,  2, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
+        self.flow5   = convbn(1024,  2, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
                             
         self.deconv4 = deconv(1024, 512, kernel_size=4, stride=2, padding=1)
-        self.flow4   = convbn(1026,  2, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
+        self.flow4   = convbn(1026,  2, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
         
         self.deconv3 = deconv(1026, 256, kernel_size=4, stride=2, padding=1)
-        self.flow3   = convbn(514,  2, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
+        self.flow3   = convbn(514,  2, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
         
         self.deconv2 = deconv(514, 128, kernel_size=4, stride=2, padding=1)
-        self.flow2   = convbn(258,  2, kernel_size=3, stride=1, padding=1, bn_type=bn_type, act_type=act_type)
+        self.flow2   = convbn(258,  2, kernel_size=3, stride=1, padding=1, bn_type=args.bn_type, act_type=args.act_type)
         
-        self.bn_type = bn_type
-        self.act_type = act_type
+        self.bn_type  = args.bn_type
+        self.act_type = args.act_type
         
         weight_init(self)
         
@@ -97,12 +97,16 @@ class EGODecoder(nn.Module):
     
 
 class EGOAutoEncoder(nn.Module):
-    def __init__(self, bn_type="syncbn", act_type="gelu"):
+    def __init__(self, args):
         super(EGOAutoEncoder, self).__init__()
-        self.encoder = EGOEncoder(bn_type, act_type)
-        self.decoder = EGODecoder(bn_type, act_type)
-        self.bn_type = bn_type
-        self.act_type = act_type
+        if args.ego_enc == "next":
+            self.encoder = EGOEncoderNext(args)
+        else:
+            self.encoder = EGOEncoder(args)
+        
+        self.decoder = EGODecoder(args)
+        self.bn_type = args.bn_type
+        self.act_type = args.act_type
   
         # self.weight_init()
         
@@ -115,3 +119,30 @@ class EGOAutoEncoder(nn.Module):
         x = self.encoder(img)
         recovered_of = self.decoder(x)
         return recovered_of
+
+class EGOEncoderNext(nn.Module):
+    def __init__(self, args):
+        super(EGOEncoderNext, self).__init__()
+        self.conv1   = make_dec_layer(  2,   64, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type)
+        self.conv2   = make_dec_layer( 64,  128, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type)
+        self.conv3   = make_dec_layer(128,  256, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type)
+        self.conv3_1 = make_dec_layer(256,  256, kernel_size=7, stride=1, padding=3, bn_type=args.bn_type)
+        self.conv4   = make_dec_layer(256,  512, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type)
+        self.conv4_1 = make_dec_layer(512,  512, kernel_size=7, stride=1, padding=3, bn_type=args.bn_type)
+        self.conv5   = make_dec_layer(512,  512, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type)
+        self.conv5_1 = make_dec_layer(512,  512, kernel_size=7, stride=1, padding=3, bn_type=args.bn_type)
+        self.conv6   = make_dec_layer(512, 1024, kernel_size=7, stride=2, padding=3, bn_type=args.bn_type)
+        
+        self.bn_type  = args.bn_type
+        self.act_type = args.act_type
+        
+        weight_init(self)
+        
+    def forward(self, x):
+        c1 = self.conv2(self.conv1(x))
+        c2 = self.conv3_1(self.conv3(c1))
+        c3 = self.conv4_1(self.conv4(c2))
+        c4 = self.conv5_1(self.conv5(c3))        
+        c5 = self.conv6(c4)
+        
+        return [c1, c2, c3, c4, c5]
