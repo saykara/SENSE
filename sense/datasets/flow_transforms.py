@@ -71,14 +71,16 @@ class NormalizeFlowOnly(object):
     """
 
     def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
+        self.mean = torch.tensor(mean).cuda()
+        self.std = torch.tensor(std).cuda()
 
     def __call__(self, flow):
-        flow[flow <= self.std[0]] = self.std[0] + 0.0001
-        flow[flow >= self.std[1]] = self.std[1] - 0.0001
-        for c in range(2):
-            flow[:,:,c] = (flow[:,:,c] - self.mean[c]) / self.std[c]
+        if not flow.is_cuda:
+            flow = flow.cuda()
+        
+        flow = torch.where(flow <= self.std[0], self.std[0] + 0.0001, flow)
+        flow = torch.where(flow >= self.std[1], self.std[1] - 0.0001, flow)
+        flow = (flow - self.mean[0]) / self.std[1]
         return flow
 
 class ArrayToTensor(object):
