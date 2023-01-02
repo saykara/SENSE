@@ -34,7 +34,7 @@ class SceneNet(nn.Module):
                                     bn_type=args.bn_type,
                                     pred_occ=not args.no_occ,
                                     cat_occ=args.cat_occ,
-                                    upsample_output=args.upsample_flow_output)
+                                    upsample_output=True)
         self.disp_decoder = PWCDispDecoder(encoder_planes=num_channels,
                                     md=args.corr_radius,
                                     do_class=args.do_class,
@@ -76,11 +76,11 @@ class SceneNet(nn.Module):
                 else:
                     raise Exception('There should be no nn.BatchNorm2d layers.')		
 
-    def forward(self, input):
-        for i in range(2):
-            input[i] = input[i].transpose(2, 3)
-        cur_l = self.encoder(input[0])
-        nxt_l = self.encoder(input[1])
+    def forward(self, cur_l, nxt_l):
+        cur_l = torch.unsqueeze(cur_l, 0)
+        nxt_l = torch.unsqueeze(nxt_l, 0)
+        cur_l = self.encoder(cur_l)
+        nxt_l = self.encoder(nxt_l)
         if self.flow_with_ppm:
             cur_x_ = cur_l[:4] + [cur_l[-1]]
             nxt_x_ = nxt_l[:4] + [nxt_l[-1]]
@@ -90,5 +90,6 @@ class SceneNet(nn.Module):
         flow_multi_scale = self.flow_decoder(cur_x_, nxt_x_)
 
         flow = flow_multi_scale[0][0] * 20
-
-        return flow / 400.
+        flow = torch.squeeze(flow, 0)
+        
+        return flow
