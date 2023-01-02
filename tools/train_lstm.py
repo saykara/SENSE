@@ -13,43 +13,24 @@ from torchvision import transforms
 
 from sense.models.ego_autoencoder import EGOAutoEncoder
 from sense.models.ego_rnn import EgoRnn 
-from sense.models.unet import UNet
 from sense.utils.arguments import parse_args
 from sense.rigidity_refine.io_utils import read_camera_data
 import sense.models.model_utils as model_utils
 from sense.lib.nn import DataParallelWithCallback
-from .demo import run_holistic_scene_model, run_warped_disparity_refinement
 from sense.datasets import kitti_vo, malaga, visual_odometry_dataset
+import sense.datasets.flow_transforms as flow_transforms
+from sense.models.dummy_scene import SceneNet
 
 
 temp_save = None
 
-def pre_process(sequence, holistic_scene_model, warp_disp_ref_model, encoder_model):
-    result = []
-    pose = None
-    seq = []
-    for i in range(5):
-        if pose is None:
-            pose = sequence[i][4]
-        else:
-            pose = sequence[i][4] - pose
-        flow_raw, flow_occ, disp0, disp1_unwarped, seg = run_holistic_scene_model(
-	    	sequence[i][0], sequence[i][1],
-	    	sequence[i][2], sequence[i][3],
-	    	holistic_scene_model
-	    )
-        flow_rigid, disp1_raw, disp1_rigid, disp1_nn = run_warped_disparity_refinement(
-        	sequence[i][0],
-        	flow_raw, flow_occ,
-        	disp0, disp1_unwarped,
-        	seg,
-        	sequence[5],
-        	warp_disp_ref_model
-        )
-        seq.append(encoder_model(flow_rigid)[4])
-    result.append(seq)
-    result.append(pose)
-    return result.cuda()
+class RMSLELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = nn.MSELoss()
+
+    def forward(self, pred, actual):
+        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1)))
 
 def make_data_helper(path):
     if args.dataset == "kitti_vo":
@@ -87,21 +68,27 @@ def data_cacher(path, args):
                 f, pickle.HIGHEST_PROTOCOL)
     return train_data, test_data
 
-def make_data_loader(dataset, args):
+def make_data_loader(path, of_model, enc, args):
     height_new = 384
     width_new = 1280
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.Resize((height_new, width_new)),
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    input_transform = transforms.Compose([
+        flow_transforms.ArrayToTensor(),
+        transforms.Resize((height_new, width_new)),
+        transforms.RandomHorizontalFlip(0.3),
+        transforms.RandomVerticalFlip(0.3)])
+    flow_transform = torchvision.transforms.Compose([
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-400.0, 400.0]),
+    ])
+    final_transform = torchvision.transforms.Compose([
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
     ])
  
-    train_data, test_data = data_cacher(args)
+    train_data, test_data = data_cacher(path, args)
     print("Train data sequence size: ", len(train_data))
     print("Test data sequence size: ", len(test_data))
     
-    train_set = visual_odometry_dataset.VODataset(train_data, transform, 5)
-    test_set = visual_odometry_dataset.VODataset(test_data, transform, 5)
+    train_set = visual_odometry_dataset.VODataset(train_data, input_transform, flow_transform, final_transform, of_model, enc, 5)
+    test_set = visual_odometry_dataset.VODataset(test_data, input_transform, flow_transform, final_transform, of_model, enc, 5)
     
     return torch.utils.data.DataLoader(
             train_set,
@@ -109,7 +96,7 @@ def make_data_loader(dataset, args):
             shuffle=True,
             num_workers=args.workers,
             drop_last=True,
-            pin_memory=True,
+            pin_memory=False,
             worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1)))
         ), torch.utils.data.DataLoader(
             test_set,
@@ -117,28 +104,27 @@ def make_data_loader(dataset, args):
             shuffle=False,
             num_workers=args.workers,
             drop_last=True,
-            pin_memory=True
+            pin_memory=False
         )
 
-def train(model, optimizer, data, criteria, hn, cn, holistic_scene_model, warp_disp_ref_model, encoder_model):
+def train(model, optimizer, data, criteria):
+    input, targets, labels = data
+    input, targets = input.to("cuda"), targets.to("cuda"), 
     model.train()
-    data = data.cuda()
-    data = pre_process(data, holistic_scene_model, warp_disp_ref_model, encoder_model)
     optimizer.zero_grad()
-    data_pred = model(data[0], hn, cn)
-    loss = criteria(data_pred, data[1])
+    pose = model(input)
+    loss = criteria(pose, targets)
     loss.backward()
     optimizer.step()
     loss = loss.item()
-    return loss, hn, cn
+    return loss
 
-def validation(model, data, criteria, holistic_scene_model, warp_disp_ref_model, encoder_model):
+def validation(model, data, criteria):
+    input, targets, labels = data
     model.eval()
-    data = data.cuda()
-    data = pre_process(data, holistic_scene_model, warp_disp_ref_model, encoder_model)
     with torch.no_grad():
-        data_pred = model(data[0])
-        loss = criteria(data_pred, data[1])
+        pose = model(input)
+        loss = criteria(pose, targets)
     return loss.item()
         
 def save_checkpoint(model, optimizer, epoch, global_step, args):
@@ -168,39 +154,33 @@ def main(args):
     random.seed(args.seed)
     
     # Flow producer model (PSMNexT)
-    holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
+    holistic_scene_model = DataParallelWithCallback(SceneNet(args)).cuda()
+    #holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
+    # print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
     holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
     ckpt = torch.load(holistic_scene_model_path)
-    state_dict = ckpt['state_dict']
+    state_dict = model_utils.patch_model_state_dict(ckpt['state_dict'])
     holistic_scene_model.load_state_dict(state_dict)
     holistic_scene_model.eval()
     
-    # Flow producer model
-    warp_disp_ref_model = UNet()
-    warp_disp_ref_model = nn.DataParallel(warp_disp_ref_model).cuda()
-    warp_disp_ref_model_path = 'data/pretrained_models/kitti2015_warp_disp_refine_1500.pth'
-    ckpt = torch.load(warp_disp_ref_model_path)
-    state_dict = ckpt['state_dict']
-    warp_disp_ref_model.load_state_dict(state_dict)
-    warp_disp_ref_model.eval()
- 
     # EGO encoder model
-    ego_model = EGOAutoEncoder("syncbn", "gelu")
-    ego_model_path = '<autoencoder path>'
+    ego_model = DataParallelWithCallback(EGOAutoEncoder("syncbn", "gelu"))
+    ego_model_path = 'data/pretrained_models/model_0040.pth'
     ckpt = torch.load(ego_model_path)
     state_dict = ckpt['state_dict']
     ego_model.load_state_dict(state_dict)
-    encoder_model = ego_model.encoder
+    encoder_model = ego_model.module.encoder
+    del ego_model
     encoder_model.eval()
     
     # Data load
-    dataset = "E:/Thesis/content/flow_dataset"
-    train_loader, validation_loader = make_data_loader(dataset, args)
+    dataset = "E:/Thesis/content/dataset"
+    train_loader, validation_loader = make_data_loader(dataset, holistic_scene_model, encoder_model, args)
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
     # Make model
-    model = EgoRnn(1024)
-    print('Number of model parameters: {}'.format(
+    model = EgoRnn(30)
+    print('Number of LSTM parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()]))
     )
     # Optimizer
@@ -211,7 +191,7 @@ def main(args):
         weight_decay=0.0004
     )
     # TODO Criteria
-    criteria = None
+    criteria = nn.L1Loss()
 
     # Save & Load model
     if args.loadmodel is not None:
@@ -238,16 +218,12 @@ def main(args):
     global_step = 0
     lr = args.lr
     
-    hn, cn = model.init_states(args.batch_size)
     train_start = datetime.now()
     for epoch in range(start_epoch, args.epochs + 1):
         epoch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
             batch_start = datetime.now()
-            train_loss, hn, cn = train(model, optimizer, batch_data, criteria, hn, cn, 
-                                       holistic_scene_model, warp_disp_ref_model, encoder_model)
-            hn = hn.detach()
-            cn = cn.detach()
+            train_loss = train(model, optimizer, batch_data, criteria)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
                 print(print_format.format(
@@ -257,11 +233,8 @@ def main(args):
 
         val_start = datetime.now()
         val_loss = 0
-        hn, cn = model.init_states(args.batch_size)
         for batch_idx, batch_data in enumerate(validation_loader):
-            temp_val, hn, cn = validation(model, batch_data, criteria, hn, cn, 
-                                          holistic_scene_model, warp_disp_ref_model, encoder_model)
-            val_loss += temp_val
+            val_loss += validation(model, batch_data, criteria)
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
             val_loss /  len(validation_loader), str(datetime.now() - val_start), lr))
@@ -269,7 +242,6 @@ def main(args):
         print(f'Epoch {epoch} elapsed time => {str(datetime.now() - epoch_start)}')
         # Save model
         save_checkpoint(model, optimizer, epoch, global_step, args)
-    save_checkpoint(model, optimizer, epoch, global_step, args)
     print(f'Train elapsed time => {str(datetime.now() - train_start)}')
 
 
