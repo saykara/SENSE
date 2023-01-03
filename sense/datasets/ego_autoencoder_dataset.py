@@ -40,23 +40,23 @@ class EGOFlowDataset(data.Dataset):
 
     def __getitem__(self, index):
         flo = self.loader(self.path_list[index])
-        self.min_max_flow(flo, index)
+#        self.min_max_flow(flo, index)
         if self.transform:
             flo = self.transform(flo)
         #image = np.einsum('ijk->kji', image)
         return flo
     
-    def min_max_flow(self, item, index):
-        global f_mi, f_ma
-        if np.min(item) < f_mi:
-            f_mi = np.min(item)
-            print("Flo min: ",f_mi)
-        if np.max(item) > f_ma:
-            f_ma = np.max(item)
-            print("Flo max: ",f_ma)
-        
-        if np.min(item) < -800. or np.max(item) > 800.:
-            print(np.min(item), " - ",  np.max(item), " - ", self.path_list[index])
+#    def min_max_flow(self, item, index):
+#        global f_mi, f_ma
+#        if np.min(item) < f_mi:
+#            f_mi = np.min(item)
+#            print("Flo min: ",f_mi)
+#        if np.max(item) > f_ma:
+#            f_ma = np.max(item)
+#            print("Flo max: ",f_ma)
+#        
+#        if np.min(item) < -800. or np.max(item) > 800.:
+#            print(np.min(item), " - ",  np.max(item), " - ", self.path_list[index])
 
 def imread(im_path, flag=1):
     im = cv2.imread(im_path, flag)
