@@ -41,8 +41,7 @@ def load_image_list(path):
         return file.readlines()
 
 def find_closest_time_index(imu_list, time):
-    return [i for i in range(len(imu_list)) if abs(imu_list[i][0] - float(time)) < 0.0051][0]
-    return min(range(len(imu_list)), key=lambda i: abs(imu_list[i][0]-float(time)))
+    return next((i for i, (t, _) in enumerate(imu_list) if abs(t - float(time)) < 0.0051), None)
     
 def calc_pose_diff(imu_list, cur_time, next_time):
     cur_idx = find_closest_time_index(imu_list, cur_time)
