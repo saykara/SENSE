@@ -178,6 +178,7 @@ def make_data_loader(model, args):
 
 def train(model, optimizer, data, criteria, args):
     model.train()
+    data = data.cuda()
     data_pred = model(data)
     loss = criteria(data_pred, data)
     optimizer.zero_grad()
