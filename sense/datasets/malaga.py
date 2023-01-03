@@ -7,7 +7,7 @@ def load_pose(path):
     with open(path, 'r') as calib_file:
         lines = calib_file.readlines()[1:]
         for line in lines:
-            items = [float(x) for x in line.split("     ")]
+            items = [float(x) for x in line.split("    ")]
             poses.append(items[:7])
     return poses
 
@@ -41,6 +41,7 @@ def load_image_list(path):
         return file.readlines()
 
 def find_closest_time_index(imu_list, time):
+    return [i for i in range(len(imu_list)) if abs(imu_list[i][0] - float(time)) < 0.0051][0]
     return min(range(len(imu_list)), key=lambda i: abs(imu_list[i][0]-float(time)))
     
 def calc_pose_diff(imu_list, cur_time, next_time):
@@ -49,10 +50,10 @@ def calc_pose_diff(imu_list, cur_time, next_time):
     imu_np = np.array(imu_list)
     position = np.array([0., 0., 0.])
     angle = np.array([0., 0., 0.])
-    for i in range(cur_idx - 1, nxt_idx):
-        delta_t = 0.1
+    for i in range(cur_idx, nxt_idx):
+        delta_t = 0.05
         angle +=  imu_np[i + 1][4:7] * delta_t
-        position = imu_np[i + 1][0:3] * delta_t * delta_t
+        position += imu_np[i + 1][1:4] * delta_t * delta_t
     return np.concatenate((position, angle))
 
 def malaga_data_helper(path, train_sequences):
