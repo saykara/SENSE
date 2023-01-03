@@ -6,6 +6,19 @@ import torch
 
 import sense.datasets.dataset_utils as du
 
+f_mi = -5.0
+f_ma = 5.0
+
+def min_max_flow(item):
+    global f_mi, f_ma
+    if np.min(item) < f_mi:
+        f_mi = np.min(item)
+        print("Flo min: ",f_mi)
+    if np.max(item) > f_ma:
+        f_ma = np.max(item)
+        print("Flo max: ",f_ma)
+        
+        
 def load_flow(path):
     if path.endswith('.pfm'):
         flow, _ = du.load_pfm(path)
@@ -36,7 +49,7 @@ class EGOFlowDataset(data.Dataset):
 
     def __getitem__(self, index):
         flo = self.loader(self.path_list[index])
-        
+        min_max_flow(flo)
         if self.transform:
             flo = self.transform(flo)
         #image = np.einsum('ijk->kji', image)
