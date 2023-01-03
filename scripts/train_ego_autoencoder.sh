@@ -6,6 +6,7 @@ RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder
 
 python tools/train_ego_autoencoder.py pre-train \
    --dataset sceneflow \
+   --ego-enc next \
    --flow-crop-imh 384 \
    --flow-crop-imw 640 \
    --savemodel ${RES_DIR} \
@@ -13,7 +14,7 @@ python tools/train_ego_autoencoder.py pre-train \
    --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 80 \
+   --epochs 40 \
    --bn-type syncbn \
    --batch-size 48 \
    --print-freq 20

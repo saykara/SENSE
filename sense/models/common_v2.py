@@ -304,7 +304,7 @@ def make_dec_layer(in_planes, out_planes, kernel_size=3, stride=1, padding=1, di
     return nn.Sequential(
         dwconv(in_planes, in_planes, kernel_size, stride, padding, dilation, bias),
         make_bn_layer(bn_type, in_planes),
-        conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1, bias=True),
+        conv(in_planes, 4 * in_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True),
         nn.GELU(),
-        conv(out_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True)
+        conv(4 * in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, bias=True)
     )
