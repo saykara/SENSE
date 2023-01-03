@@ -12,7 +12,7 @@ python tools/train_ego_autoencoder.py pre-train \
    --savemodel ${RES_DIR} \
    --workers 2 \
    --lr 0.0001 \
-   --lr-steps 70 \
+   --lr-steps 10 \
    --lr-gamma 0.1 \
    --epochs 40 \
    --bn-type syncbn \
