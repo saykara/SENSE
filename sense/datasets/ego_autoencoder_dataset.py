@@ -55,7 +55,7 @@ class EGOFlowDataset(data.Dataset):
             f_ma = np.max(item)
             print("Flo max: ",f_ma)
         
-        if f_mi < -800. or f_ma > 800.:
+        if np.min(item) < -800. or np.max(item) > 800.:
             print(np.min(item), " - ",  np.max(item), " - ", self.path_list[index])
 
 def imread(im_path, flag=1):
