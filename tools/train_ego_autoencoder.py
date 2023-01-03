@@ -141,7 +141,7 @@ def make_data_loader(model, args):
     else:
         transform = transforms.Compose([
             flow_transforms.ArrayToTensor(),
-            flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-800.0, 800.0]),
+            flow_transforms.NormalizeFlowOnlyNP(mean=[0,0],std=[-800.0, 800.0]),
             transforms.RandomResizedCrop((height_new, width_new)),
             transforms.RandomHorizontalFlip(0.3),
             transforms.RandomVerticalFlip(0.3)]) 

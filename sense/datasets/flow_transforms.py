@@ -75,11 +75,24 @@ class NormalizeFlowOnly(object):
         self.std = torch.tensor(std).cuda()
 
     def __call__(self, flow):
-        if not flow.is_cuda:
-            flow = flow.cuda()
-        
         flow = torch.where(flow <= self.std[0], self.std[0] + 0.0001, flow)
         flow = torch.where(flow >= self.std[1], self.std[1] - 0.0001, flow)
+        flow = (flow - self.mean[0]) / self.std[1]
+        return flow
+    
+class NormalizeFlowOnlyNP(object):
+    """Given mean: (R, G, B) and std: (R, G, B),
+    will normalize each channel of the torch.*Tensor, i.e.
+    channel = (channel - mean) / std
+    """
+
+    def __init__(self, mean, std):
+        self.mean = np.array(mean)
+        self.std = np.array(std)
+
+    def __call__(self, flow):
+        flow = np.where(flow <= self.std[0], self.std[0] + 0.0001, flow)
+        flow = np.where(flow >= self.std[1], self.std[1] - 0.0001, flow)
         flow = (flow - self.mean[0]) / self.std[1]
         return flow
 
