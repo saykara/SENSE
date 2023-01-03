@@ -87,12 +87,12 @@ class NormalizeFlowOnlyNP(object):
     """
 
     def __init__(self, mean, std):
-        self.mean = np.array(mean)
-        self.std = np.array(std)
+        self.mean = torch.tensor(mean)
+        self.std = torch.tensor(std)
 
     def __call__(self, flow):
-        flow = np.where(flow <= self.std[0], self.std[0] + 0.0001, flow)
-        flow = np.where(flow >= self.std[1], self.std[1] - 0.0001, flow)
+        flow = torch.where(flow <= self.std[0], self.std[0] + 0.0001, flow)
+        flow = torch.where(flow >= self.std[1], self.std[1] - 0.0001, flow)
         flow = (flow - self.mean[0]) / self.std[1]
         return flow
 
