@@ -1,6 +1,7 @@
 import os
 import numpy as np
 
+flag = True
 
 def load_pose(path):
     poses = []
@@ -41,10 +42,13 @@ def load_image_list(path):
         return file.readlines()
 
 def find_closest_time_index(imu_list, time):
+    global flag
     for i in range(len(imu_list)):
-        if abs(imu_list[i][0] - float(time)) < 0.0051:
+        if abs(float(imu_list[i][0]) - float(time)) <= 0.0051:
             return i
-    
+    flag = False
+    return 0
+
 def calc_pose_diff(imu_list, cur_time, next_time):
     cur_idx = find_closest_time_index(imu_list, cur_time)
     nxt_idx = find_closest_time_index(imu_list, next_time)
@@ -58,6 +62,7 @@ def calc_pose_diff(imu_list, cur_time, next_time):
     return np.concatenate((position, angle))
 
 def malaga_data_helper(path, train_sequences):
+    global flag
     malaga_train = []
     malaga_test = []
     
@@ -69,6 +74,7 @@ def malaga_data_helper(path, train_sequences):
         pose_list = load_pose(os.path.join(base_dir, seq, seq + "_all-sensors_IMU.txt"))
         image_list.sort()
         for j in range(0, len(image_list) - 20, 2):
+            flag = True
             sequence = []
             pose = np.empty([6], dtype = float)
             for k in range(0, 10, 2):
@@ -77,10 +83,14 @@ def malaga_data_helper(path, train_sequences):
                 nxt_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 2])
                 # nxt_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 3])
                 sequence.append([cur_left, nxt_left])
-                pose += calc_pose_diff(pose_list, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])
-            sequence.append(pose)
-            sequence.append("M")
-            malaga_train.append(sequence) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(sequence)
+                if flag:
+                  pose += calc_pose_diff(pose_list, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])
+                else:
+                  break
+            if flag:
+              sequence.append(pose)
+              sequence.append("M")
+              malaga_train.append(sequence) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(sequence)
     return malaga_train, malaga_test
 
 def malaga_flow_data_helper(path, train_sequences):
