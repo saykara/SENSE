@@ -41,24 +41,23 @@ def load_image_list(path):
     with open(path, 'r') as file:
         return file.readlines()
 
-def find_closest_time_index(imu_list, time):
+def find_closest_time_index(imu_list, time, idx):
     global flag
-    for i in range(len(imu_list)):
+    for i in range(idx, len(imu_list)):
         if abs(float(imu_list[i][0]) - float(time)) <= 0.0051:
             return i
     flag = False
     return 0
 
-def calc_pose_diff(imu_list, cur_time, next_time):
-    cur_idx = find_closest_time_index(imu_list, cur_time)
-    nxt_idx = find_closest_time_index(imu_list, next_time)
-    imu_np = np.array(imu_list)
+def calc_pose_diff(imu_np, cur_time, next_time):
+    cur_idx = find_closest_time_index(imu_np, cur_time, 0)
+    nxt_idx = find_closest_time_index(imu_np, next_time, cur_idx)
     position = np.array([0., 0., 0.])
     angle = np.array([0., 0., 0.])
     for i in range(cur_idx, nxt_idx):
         delta_t = 0.05
-        angle +=  imu_np[i + 1][4:7] * delta_t
-        position += imu_np[i + 1][1:4] * delta_t * delta_t
+        angle +=  imu_np[i][4:7] * delta_t
+        position += imu_np[i][1:4] * delta_t * delta_t
     return np.concatenate((position, angle))
 
 def malaga_data_helper(path, train_sequences):
@@ -73,6 +72,8 @@ def malaga_data_helper(path, train_sequences):
         image_list = os.listdir(os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images"))
         pose_list = load_pose(os.path.join(base_dir, seq, seq + "_all-sensors_IMU.txt"))
         image_list.sort()
+        imu_np = np.array(pose_list)
+        print(seq)
         for j in range(0, len(image_list) - 20, 2):
             flag = True
             sequence = []
@@ -84,7 +85,7 @@ def malaga_data_helper(path, train_sequences):
                 # nxt_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 3])
                 sequence.append([cur_left, nxt_left])
                 if flag:
-                  pose += calc_pose_diff(pose_list, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])
+                  pose += calc_pose_diff(imu_np, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])
                 else:
                   break
             if flag:
