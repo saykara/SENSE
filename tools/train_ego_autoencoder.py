@@ -280,7 +280,7 @@ def main(args):
     lr = args.lr
     train_start = datetime.now()
     for epoch in range(start_epoch, args.epochs + 1):
-        lr = adjust_learning_rate(optimizer, epoch, lr, 20)
+        lr = adjust_learning_rate(optimizer, epoch, lr, args.lr_steps)
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
