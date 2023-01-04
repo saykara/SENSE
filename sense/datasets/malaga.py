@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 flag = True
+last_idx = 0
 
 def load_pose(path):
     poses = []
@@ -50,7 +51,9 @@ def find_closest_time_index(imu_list, time, idx):
     return 0
 
 def calc_pose_diff(imu_np, cur_time, next_time):
-    cur_idx = find_closest_time_index(imu_np, cur_time, 0)
+    global last_idx
+    cur_idx = find_closest_time_index(imu_np, cur_time, last_idx)
+    last_idx = cur_idx
     nxt_idx = find_closest_time_index(imu_np, next_time, cur_idx)
     position = np.array([0., 0., 0.])
     angle = np.array([0., 0., 0.])
@@ -61,13 +64,14 @@ def calc_pose_diff(imu_np, cur_time, next_time):
     return np.concatenate((position, angle))
 
 def malaga_data_helper(path, train_sequences):
-    global flag
+    global flag, last_idx
     malaga_train = []
     malaga_test = []
     
     base_dir = os.path.join(path, "malaga")
     sequence_list = os.listdir(base_dir)
     for seq in sequence_list:
+        last_idx = 0
         # calib = load_calib(os.path.join(path, seq, "camera_params_rectified_a=0_1024x768.txt"))
         image_list = os.listdir(os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images"))
         pose_list = load_pose(os.path.join(base_dir, seq, seq + "_all-sensors_IMU.txt"))
