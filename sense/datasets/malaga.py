@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from datetime import datetime
 
 flag = True
 last_idx = 0
@@ -44,16 +45,29 @@ def load_image_list(path):
 
 def find_closest_time_index(imu_list, time, idx):
     global flag
+    diff = -1.
+    best = -1
     for i in range(idx, len(imu_list)):
-        if abs(float(imu_list[i][0]) - float(time)) <= 0.0051:
-            return i
+        if abs(float(imu_list[i][0]) - float(time)) <= 0.1:
+            diff = abs(float(imu_list[i][0]) - float(time))
+            best = i
+            for j in range(1, 6):
+                if i + j < len(imu_list):
+                    if abs(float(imu_list[i + j][0]) - float(time)) < diff:
+                        diff = abs(float(imu_list[i + j][0]) - float(time))
+                        best = i + j
+            return best
     flag = False
-    return 0
+    return best
 
 def calc_pose_diff(imu_np, cur_time, next_time):
-    global last_idx
+    global last_idx, flag
     cur_idx = find_closest_time_index(imu_np, cur_time, last_idx)
-    last_idx = cur_idx
+    if cur_idx > 0:
+        if cur_idx - 10 > 0:
+            last_idx = cur_idx - 10
+    else:
+        return np.empty([6], dtype = float)
     nxt_idx = find_closest_time_index(imu_np, next_time, cur_idx)
     position = np.array([0., 0., 0.])
     angle = np.array([0., 0., 0.])
@@ -64,7 +78,7 @@ def calc_pose_diff(imu_np, cur_time, next_time):
     return np.concatenate((position, angle))
 
 def malaga_data_helper(path, train_sequences):
-    global flag, last_idx
+    global flag, last_idx, ls
     malaga_train = []
     malaga_test = []
     
@@ -72,6 +86,8 @@ def malaga_data_helper(path, train_sequences):
     sequence_list = os.listdir(base_dir)
     for seq in sequence_list:
         last_idx = 0
+        i = 0
+        t = datetime.now()
         # calib = load_calib(os.path.join(path, seq, "camera_params_rectified_a=0_1024x768.txt"))
         image_list = os.listdir(os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images"))
         pose_list = load_pose(os.path.join(base_dir, seq, seq + "_all-sensors_IMU.txt"))
@@ -83,19 +99,21 @@ def malaga_data_helper(path, train_sequences):
             sequence = []
             pose = np.empty([6], dtype = float)
             for k in range(0, 10, 2):
+                if not flag:
+                    break
                 cur_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k])
                 # cur_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 1])
                 nxt_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 2])
                 # nxt_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 3])
                 sequence.append([cur_left, nxt_left])
-                if flag:
-                  pose += calc_pose_diff(imu_np, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])
-                else:
-                  break
+                pose += calc_pose_diff(imu_np, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])   
             if flag:
-              sequence.append(pose)
-              sequence.append("M")
-              malaga_train.append(sequence) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(sequence)
+                i += 1
+                sequence.append(pose)
+                sequence.append("M")
+                malaga_train.append(sequence) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(sequence)
+        print(f"{str(datetime.now() - t)}")
+        print(f"{i}/{len(image_list) / 2}")
     return malaga_train, malaga_test
 
 def malaga_flow_data_helper(path, train_sequences):
