@@ -219,7 +219,7 @@ def save_checkpoint(model, optimizer, epoch, flag, args):
         print('<=== checkpoint has been saved to {}.'.format(model_path))
 
 def adjust_learning_rate(optimizer, epoch, lr, rate):
-    if epoch % rate == 0:
+    if epoch % rate[0] == 0:
         lr *= 0.316
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
