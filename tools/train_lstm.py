@@ -172,7 +172,7 @@ def main(args):
     ego_model_path = 'data/pretrained_models/model_0040.pth'
     
     # Data load
-    dataset = "E:\Thesis\content\dataset"
+    dataset = "/content/dataset"
     train_loader, validation_loader = make_data_loader(dataset, holistic_scene_model_path, ego_model_path, args)
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
