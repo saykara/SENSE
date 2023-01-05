@@ -27,24 +27,52 @@ def min_max_eva(item):
     if item > e_ma:
         e_ma = item
         print("Eva max: ",e_ma)
+
+class PreprocessingCollateFn(object):
+    def __init__(self, optical_flow_model, encoder, flow_transform, final_transform):
+        self.optical_flow_model = optical_flow_model
+        self.encoder = encoder
+        self.flow_transform = flow_transform
+        self.final_transform = final_transform
+
+    def __call__(self, batch):
+        flows = []
+        poses = []
+        for sample in batch:
+            seq = []
+            for img in sample[0]:
+                with torch.no_grad():
+                    flow = self.optical_flow_model(img[0], img[1])
+                    flow = self. transform_flow(flow)   
+                    flow = self.encoder(flow)
+                    flow = self.transform_final(flow)
+                    seq.append(flow)
+            flows.append(torch.stack(seq))
+            poses.append(sample[1])
+        return torch.stack(flows), torch.stack(poses)
+    
+    def transform_flow(self, flow):
+        flow = self.flow_transform(flow)
+        return torch.unsqueeze(flow, 0)
+
+    def transform_final(self, flow):
+        flow = flow[4]
+        flow = torch.squeeze(flow, 0)
+        return self.final_transform(flow)
     
 class VODataset(data.Dataset):
-    def __init__(self, data, input_transform, flow_transform, final_transform, optical_flow_model, encoder, seq_len = 5):
+    def __init__(self, data, input_transform, seq_len = 5):
         super(VODataset, self).__init__()
         self.data = data
         self.image_loader = self.imread
         self.input_transform = input_transform
-        self.flow_transform = flow_transform
-        self.final_transform = final_transform
         self.seq_len = seq_len
-        self.optical_flow_model = optical_flow_model
-        self.encoder = encoder
         
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        flows = []
+        seq = []
         for i in range(self.seq_len):
             cur_l = self.image_loader(self.data[index][i][0])
             nxt_l = self.image_loader(self.data[index][i][1])
@@ -52,28 +80,11 @@ class VODataset(data.Dataset):
             if self.input_transform:
                 cur_l = self.input_transform(cur_l)
                 nxt_l = self.input_transform(nxt_l)
-            with torch.no_grad():
-                flow = self.optical_flow_model(cur_l, nxt_l)
-            #min_max_flow(torch.max(flow).item())
-            #min_max_flow(torch.min(flow).item())
-
-            if self.flow_transform:
-                flow = self.flow_transform(flow)
-                flow = torch.unsqueeze(flow, 0)
-            with torch.no_grad():    
-                flow = self.encoder(flow)
-                flow = flow[4]
-                flow = torch.squeeze(flow, 0)
-            #min_max_eva(torch.max(flow).item())
-            #min_max_eva(torch.min(flow).item())
-            if self.final_transform:
-                flow = self.final_transform(flow)
             
-            flows.append(flow)
-        flows = torch.stack(flows)
+            seq.append([cur_l, nxt_l])
         pose = torch.tensor(self.data[index][self.seq_len])
         pose = pose.to(torch.float32)
-        return flows, pose, self.data[index][self.seq_len + 1]
+        return seq, pose
     
     def read_poses(self, path):
         poses = []

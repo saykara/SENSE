@@ -82,7 +82,7 @@ def malaga_data_helper(path, train_sequences):
     malaga_train = []
     malaga_test = []
     
-    base_dir = os.path.join(path, "malaga")
+    base_dir = os.path.join(path, "malaga").replace("\\","/")
     sequence_list = os.listdir(base_dir)
     for seq in sequence_list:
         last_idx = 0
@@ -101,16 +101,15 @@ def malaga_data_helper(path, train_sequences):
             for k in range(0, 10, 2):
                 if not flag:
                     break
-                cur_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k])
+                cur_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k]).replace("\\","/")
                 # cur_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 1])
-                nxt_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 2])
+                nxt_left = os.path.join(base_dir, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 2]).replace("\\","/")
                 # nxt_right = os.path.join(path, seq, seq + "_rectified_1024x768_Images", image_list[j + k + 3])
                 sequence.append([cur_left, nxt_left])
                 pose += calc_pose_diff(imu_np, image_list[j + k].split("_")[2], image_list[j + k + 2].split("_")[2])   
             if flag:
                 i += 1
                 sequence.append(pose)
-                sequence.append("M")
                 malaga_train.append(sequence) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(sequence)
         print(f"{str(datetime.now() - t)}")
         print(f"{i}/{len(image_list) / 2}")

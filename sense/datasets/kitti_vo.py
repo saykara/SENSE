@@ -73,24 +73,23 @@ def kitti_vo_data_helper(path, train_sequences):
     kitti_vo_train = []
     kitti_vo_test = []
     
-    base_dir = os.path.join(path, "kitti_vo", "dataset")
-    pose_list = load_pose(os.path.join(base_dir, "poses"))
+    base_dir = os.path.join(path, "kitti_vo", "dataset").replace("\\","/")
+    pose_list = load_pose(os.path.join(base_dir, "poses").replace("\\","/"))
     for i in range(len(pose_list.keys())):
         # calib = load_calib(os.path.join(base_dir, "sequences", f"{i:02}"))
-        left_img_list = os.listdir(os.path.join(base_dir, "sequences", f"{i:02}", "image_2"))
+        left_img_list = os.listdir(os.path.join(base_dir, "sequences", f"{i:02}", "image_2").replace("\\","/"))
         left_img_list.sort()
         # right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
         # right_img_list.sort()
         for j in range(len(left_img_list) - 5):
             sequence = []
             for k in range(5):
-                cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k])
+                cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k]).replace("\\","/")
                 # cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k])
-                nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k + 1])
+                nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k + 1]).replace("\\","/")
                 # nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k + 1])
                 sequence.append([cur_left, nxt_left])
             sequence.append(calc_pose_diff(pose_list.get(f"{i:02}")[j], pose_list.get(f"{i:02}")[j + 4]))
-            sequence.append("K")
             # sequence.append(calib)
             kitti_vo_train.append(sequence) if i in train_sequences else kitti_vo_test.append(sequence)
     return kitti_vo_train, kitti_vo_test

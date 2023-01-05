@@ -87,8 +87,10 @@ def make_data_loader(path, of_model, enc, args):
     print("Train data sequence size: ", len(train_data))
     print("Test data sequence size: ", len(test_data))
     
-    train_set = visual_odometry_dataset.VODataset(train_data, input_transform, flow_transform, final_transform, of_model, enc, 5)
-    test_set = visual_odometry_dataset.VODataset(test_data, input_transform, flow_transform, final_transform, of_model, enc, 5)
+    train_set = visual_odometry_dataset.VODataset(train_data, input_transform, 5)
+    test_set = visual_odometry_dataset.VODataset(test_data, input_transform, 5)
+    
+    collate_fn = visual_odometry_dataset.PreprocessingCollateFn(of_model, enc, flow_transform, final_transform)
     
     return torch.utils.data.DataLoader(
             train_set,
@@ -97,18 +99,20 @@ def make_data_loader(path, of_model, enc, args):
             num_workers=args.workers,
             drop_last=True,
             pin_memory=False,
-            worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1)))
+            worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1))),
+            collate_fn=collate_fn
         ), torch.utils.data.DataLoader(
             test_set,
             batch_size=args.batch_size,
             shuffle=False,
             num_workers=args.workers,
             drop_last=True,
-            pin_memory=False
+            pin_memory=False,
+            collate_fn=collate_fn
         )
 
 def train(model, optimizer, data, criteria):
-    input, targets, labels = data
+    input, targets = data
     input, targets = input.to("cuda"), targets.to("cuda"), 
     model.train()
     optimizer.zero_grad()
@@ -120,7 +124,7 @@ def train(model, optimizer, data, criteria):
     return loss
 
 def validation(model, data, criteria):
-    input, targets, labels = data
+    input, targets = data
     input, targets = input.to("cuda"), targets.to("cuda"), 
     model.eval()
     with torch.no_grad():
@@ -182,7 +186,7 @@ def main(args):
     encoder_model.eval()
     
     # Data load
-    dataset = "/content/dataset"
+    dataset = "E:\Thesis\content\dataset"
     train_loader, validation_loader = make_data_loader(dataset, holistic_scene_model, encoder_model, args)
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
@@ -199,7 +203,7 @@ def main(args):
         weight_decay=0.0004
     )
     # TODO Criteria
-    criteria = RMSLELoss()
+    criteria = nn.MSELoss()
 
     # Save & Load model
     if args.loadmodel is not None:
