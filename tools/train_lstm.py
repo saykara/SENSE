@@ -121,6 +121,7 @@ def train(model, optimizer, data, criteria):
 
 def validation(model, data, criteria):
     input, targets, labels = data
+    input, targets = input.to("cuda"), targets.to("cuda"), 
     model.eval()
     with torch.no_grad():
         pose = model(input)
@@ -164,7 +165,7 @@ def main(args):
     holistic_scene_model.eval()
     
     # EGO encoder model
-    ego_model = DataParallelWithCallback(EGOAutoEncoder(args))
+    ego_model = DataParallelWithCallback(EGOAutoEncoder(args)).cuda()
     ego_model_path = 'data/pretrained_models/model_0040.pth'
     ckpt = torch.load(ego_model_path)
     state_dict = ckpt['state_dict']
@@ -191,7 +192,7 @@ def main(args):
         weight_decay=0.0004
     )
     # TODO Criteria
-    criteria = nn.L1Loss()
+    criteria = RMSLELoss()
 
     # Save & Load model
     if args.loadmodel is not None:
@@ -221,8 +222,8 @@ def main(args):
     train_start = datetime.now()
     for epoch in range(start_epoch, args.epochs + 1):
         epoch_start = datetime.now()
+        batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
-            batch_start = datetime.now()
             train_loss = train(model, optimizer, batch_data, criteria)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
@@ -230,6 +231,7 @@ def main(args):
                     'Train', epoch, batch_idx, len(train_loader),
                     train_loss, str(datetime.now() - batch_start), lr))
                 sys.stdout.flush()
+                batch_start = datetime.now()
 
         val_start = datetime.now()
         val_loss = 0
