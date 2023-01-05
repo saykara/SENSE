@@ -166,7 +166,7 @@ def make_data_loader(model, args):
             num_workers=args.workers,
             drop_last=True,
             pin_memory=False,
-            #worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1)))
+            worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1)))
         ), torch.utils.data.DataLoader(
             test_set,
             batch_size=args.batch_size,
@@ -401,26 +401,6 @@ def tune(args):
 if __name__ == '__main__':
     parser = parse_args()
     args = parser.parse_args()
-    args.stride = 32
-    	# stereo disparity
-    args.enc_arch = 'psm'
-    args.dec_arch = 'pwcdc'
-    args.disp_refinement = 'hourglass'
-    args.no_ppm = False
-    args.do_class = False
-    # optical flow
-    args.flow_dec_arch = 'pwcdc'
-    args.flow_refinement = 'none'
-    args.flow_no_ppm = True
-    args.upsample_flow_output = True
-    args.div_flow = 20
-    # semantic segmentation
-    args.num_seg_class = 19
-    # other options
-    args.bn_type = 'syncbn'
-    args.corr_radius = 4
-    args.no_occ = False
-    args.cat_occ = False
     args.stride = 32
     if args.cmd == "finetune":
         tune(args)

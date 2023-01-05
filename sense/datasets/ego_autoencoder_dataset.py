@@ -84,7 +84,7 @@ class EGOAutoencoderImageDataset(data.Dataset):
             nxt_l = self.transform(nxt_l)
         #image = np.einsum('ijk->kji', image)
         with torch.no_grad():
-            flow = self.model([cur_l, nxt_l])
+            flow = self.model(cur_l, nxt_l)
 
         if self.flow_transform:
             flow = self.flow_transform(flow)
