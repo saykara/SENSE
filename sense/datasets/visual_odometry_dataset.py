@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 import torch
-from tools.demo import image_to_tensor, run_holistic_scene_model
+import threading
 
 from sense.models.ego_autoencoder import EGOAutoEncoder
 from sense.lib.nn import DataParallelWithCallback
@@ -47,7 +47,10 @@ class PreprocessingCollateFn(object):
         self.optical_flow_model = DataParallelWithCallback(SceneNet(args))
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
-        self.optical_flow_model.eval()    
+        self.optical_flow_model.eval()
+        
+        self.flow_lock = threading.Lock()
+        self.enc_lock = threading.Lock()
 
     def __call__(self, batch):
         flows = []
@@ -56,9 +59,13 @@ class PreprocessingCollateFn(object):
             seq = []
             for img in sample[0]:
                 with torch.no_grad():
+                    self.flow_lock.acquire()
                     flow = self.optical_flow_model(img[0], img[1])
+                    self.flow_lock.release()
                     flow = self. transform_flow(flow)   
+                    self.enc_lock.acquire()
                     flow = self.encoder(flow)
+                    self.enc_lock.release()
                     flow = self.transform_final(flow)
                     seq.append(flow)
             flows.append(torch.stack(seq))
