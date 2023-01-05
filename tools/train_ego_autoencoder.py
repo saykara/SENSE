@@ -92,8 +92,8 @@ def make_flow_data_helper(args):
     elif args.dataset == "kittimalaga":
         kitti_dir = os.path.join(BASE_DIR, "kitti_vo")
         malaga_dir = os.path.join(BASE_DIR, "malaga")
-        kitti_train_sequences = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
-        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        kitti_train_sequences = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
         kitti_train, kitti_test = kitti_vo.kitti_vo_flow_data_helper(kitti_dir, kitti_train_sequences)
         malaga_train, malaga_test = malaga.malaga_flow_data_helper(malaga_dir, malaga_train_sequences)
         train_list = kitti_train + malaga_train
