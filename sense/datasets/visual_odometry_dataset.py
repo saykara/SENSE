@@ -5,6 +5,10 @@ import numpy as np
 import torch
 from tools.demo import image_to_tensor, run_holistic_scene_model
 
+from sense.models.ego_autoencoder import EGOAutoEncoder
+from sense.lib.nn import DataParallelWithCallback
+from sense.models.dummy_scene import SceneNet
+
 f_mi = -5.0
 f_ma = 5.0
 e_mi = -5.0
@@ -29,11 +33,21 @@ def min_max_eva(item):
         print("Eva max: ",e_ma)
 
 class PreprocessingCollateFn(object):
-    def __init__(self, optical_flow_model, encoder, flow_transform, final_transform):
-        self.optical_flow_model = optical_flow_model
-        self.encoder = encoder
+    def __init__(self, optical_flow_model_path, encoder_path, flow_transform, final_transform, args):
         self.flow_transform = flow_transform
         self.final_transform = final_transform
+        
+        ego_model = DataParallelWithCallback(EGOAutoEncoder(args))
+        ckpt = torch.load(encoder_path)
+        state_dict = ckpt['state_dict']
+        ego_model.load_state_dict(state_dict)
+        self.encoder = ego_model.module.encoder
+        self.encoder.eval()
+        
+        self.optical_flow_model = DataParallelWithCallback(SceneNet(args))
+        ckpt = torch.load(optical_flow_model_path)
+        self.optical_flow_model.load_state_dict(ckpt['state_dict'])
+        self.optical_flow_model.eval()    
 
     def __call__(self, batch):
         flows = []

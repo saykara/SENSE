@@ -90,7 +90,7 @@ def make_data_loader(path, of_model, enc, args):
     train_set = visual_odometry_dataset.VODataset(train_data, input_transform, 5)
     test_set = visual_odometry_dataset.VODataset(test_data, input_transform, 5)
     
-    collate_fn = visual_odometry_dataset.PreprocessingCollateFn(of_model, enc, flow_transform, final_transform)
+    collate_fn = visual_odometry_dataset.PreprocessingCollateFn(of_model, enc, flow_transform, final_transform, args)
     
     return torch.utils.data.DataLoader(
             train_set,
@@ -99,7 +99,7 @@ def make_data_loader(path, of_model, enc, args):
             num_workers=args.workers,
             drop_last=True,
             pin_memory=False,
-            worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1))),
+            # worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1))),
             collate_fn=collate_fn
         ), torch.utils.data.DataLoader(
             test_set,
@@ -166,28 +166,14 @@ def main(args):
     random.seed(args.seed)
     
     # Flow producer model (PSMNexT)
-    holistic_scene_model = DataParallelWithCallback(SceneNet(args)).cuda()
-    #holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
-    # print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
     holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
-    ckpt = torch.load(holistic_scene_model_path)
-    state_dict = model_utils.patch_model_state_dict(ckpt['state_dict'])
-    holistic_scene_model.load_state_dict(state_dict)
-    holistic_scene_model.eval()
     
     # EGO encoder model
-    ego_model = DataParallelWithCallback(EGOAutoEncoder(args)).cuda()
     ego_model_path = 'data/pretrained_models/model_0040.pth'
-    ckpt = torch.load(ego_model_path)
-    state_dict = ckpt['state_dict']
-    ego_model.load_state_dict(state_dict)
-    encoder_model = ego_model.module.encoder
-    del ego_model
-    encoder_model.eval()
     
     # Data load
     dataset = "E:\Thesis\content\dataset"
-    train_loader, validation_loader = make_data_loader(dataset, holistic_scene_model, encoder_model, args)
+    train_loader, validation_loader = make_data_loader(dataset, holistic_scene_model_path, ego_model_path, args)
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
     # Make model
