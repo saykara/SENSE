@@ -1,5 +1,5 @@
 from sense.models.ego_autoencoder import EGOAutoEncoder
-from sense.datasets.ego_autoencoder_dataset import EGOFlowDataset, EGOAutoencoderImageDataset, load_flow
+from sense.datasets.ego_autoencoder_dataset import EGOFlowDataset, EGOAutoencoderImageDataset, PreprocessingCollateFn
 from sense.utils.arguments import parse_args
 from sense.lib.nn import DataParallelWithCallback
 from tools.demo import warp_disp_refine_rigid, run_holistic_scene_model
@@ -150,11 +150,14 @@ def make_data_loader(model, args):
     print("Train data sample size: ", len(train_data))
     print("Test data sample size: ", len(test_data))
     
+    collate_fn = None
+    
     path = "E:/Thesis/content/flow_dataset" if args.dataset == "local" else "/content/flow_dataset"
     path = BASE_DIR if args.dataset == "kittimalaga" else "/content/flow_dataset"
     if args.cmd == "finetune":
-        train_set = EGOAutoencoderImageDataset(root=path, path_list=train_data, transform=transform, flow_transform=flow_transform, model=model)
-        test_set = EGOAutoencoderImageDataset(root=path, path_list=test_data, transform=transform, flow_transform=flow_transform, model=model)
+        train_set = EGOAutoencoderImageDataset(root=path, path_list=train_data, transform=transform)
+        test_set = EGOAutoencoderImageDataset(root=path, path_list=test_data, transform=transform)
+        collate_fn = PreprocessingCollateFn(model, flow_transform, args)
     else:
         train_set = EGOFlowDataset(root=path, path_list=train_data, transform=transform)
         test_set = EGOFlowDataset(root=path, path_list=test_data, transform=transform)
@@ -174,11 +177,10 @@ def make_data_loader(model, args):
             num_workers=args.workers,
             drop_last=True,
             pin_memory=False
-        )
+        ), collate_fn
 
 def train(model, optimizer, data, criteria, args):
     model.train()
-    data = data.cuda()
     data_pred = model(data)
     loss = criteria(data_pred, data)
     optimizer.zero_grad()
@@ -189,7 +191,6 @@ def train(model, optimizer, data, criteria, args):
 
 def validation(model, data, criteria):
     model.eval()
-    data = data.cuda()
     with torch.no_grad():
         data_pred = model(data)
         loss = criteria(data_pred, data)
@@ -232,7 +233,7 @@ def main(args):
     random.seed(args.seed)
     
     # Data load
-    train_loader, validation_loader = make_data_loader(None, args)
+    train_loader, validation_loader, _ = make_data_loader(None, args)
     
     # Make model
     model = EGOAutoEncoder(args)
@@ -284,6 +285,7 @@ def main(args):
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
+            batch_data = batch_data.cuda()
             train_loss = train(model, optimizer, batch_data, criteria, args)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
@@ -296,6 +298,7 @@ def main(args):
         val_start = datetime.now()
         val_loss = 0
         for batch_idx, batch_data in enumerate(validation_loader):
+            batch_data = batch_data.cuda()
             val_loss += validation(model, batch_data, criteria)
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
@@ -313,17 +316,10 @@ def tune(args):
     np.random.seed(args.seed)  
     random.seed(args.seed)
     
-    holistic_scene_model = DataParallelWithCallback(SceneNet(args)).cuda()
-    #holistic_scene_model = model_utils.make_model(args, do_flow=True, do_disp=True, do_seg=True)
-    # print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
     holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
-    ckpt = torch.load(holistic_scene_model_path)
-    state_dict = model_utils.patch_model_state_dict(ckpt['state_dict'])
-    holistic_scene_model.load_state_dict(state_dict)
-    holistic_scene_model.eval()
     
     # Data load
-    train_loader, validation_loader = make_data_loader(holistic_scene_model, args)
+    train_loader, validation_loader, preprocess = make_data_loader(holistic_scene_model_path, args)
     
     # Make model
     model = EGOAutoEncoder(args)
@@ -375,6 +371,7 @@ def tune(args):
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
+            batch_data = preprocess(batch_data)
             train_loss = train(model, optimizer, batch_data, criteria, args)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
@@ -387,6 +384,7 @@ def tune(args):
         val_start = datetime.now()
         val_loss = 0
         for batch_idx, batch_data in enumerate(validation_loader):
+            batch_data = preprocess(batch_data)
             val_loss += validation(model, batch_data, criteria)
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
