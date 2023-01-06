@@ -97,18 +97,18 @@ def kitti_vo_data_helper(path, train_sequences):
 def kitti_vo_flow_data_helper(path, train_sequences):
     kitti_vo_train = []
     kitti_vo_test = []
-    seq_list = os.listdir(os.path.join(path, "dataset", "sequences"))
+    seq_list = os.listdir(os.path.join(path, "dataset", "sequences").replace("\\","/"))
     for i in range(len(seq_list)):
-        calib = load_calib(os.path.join(path, "dataset", "sequences", f"{i:02}"))
-        left_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2"))
+        calib = load_calib(os.path.join(path, "dataset", "sequences", f"{i:02}").replace("\\","/"))
+        left_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2").replace("\\","/"))
         left_img_list.sort()
-        right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3"))
+        right_img_list = os.listdir(os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3").replace("\\","/"))
         right_img_list.sort()
         for j in range(len(left_img_list) - 1):
-            cur_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j])
-            cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j])
-            nxt_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j + 1])
-            nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + 1])
+            cur_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j]).replace("\\","/")
+            cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j]).replace("\\","/")
+            nxt_left = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_2", left_img_list[j + 1]).replace("\\","/")
+            nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + 1]).replace("\\","/")
             item = [cur_left, nxt_left]
             kitti_vo_train.append(item) if i in train_sequences else kitti_vo_test.append(item)
     return kitti_vo_train, kitti_vo_test

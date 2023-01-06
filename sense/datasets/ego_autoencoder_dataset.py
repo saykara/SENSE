@@ -5,10 +5,8 @@ import numpy as np
 import torch
 
 import sense.datasets.dataset_utils as du
-
-f_mi = -5.0
-f_ma = 5.0
-        
+from sense.lib.nn import DataParallelWithCallback
+from sense.models.dummy_scene import SceneNet
         
 def load_flow(path):
     if path.endswith('.pfm'):
@@ -40,38 +38,22 @@ class EGOFlowDataset(data.Dataset):
 
     def __getitem__(self, index):
         flo = self.loader(self.path_list[index])
-#        self.min_max_flow(flo, index)
         if self.transform:
             flo = self.transform(flo)
-        #image = np.einsum('ijk->kji', image)
         return flo
     
-#    def min_max_flow(self, item, index):
-#        global f_mi, f_ma
-#        if np.min(item) < f_mi:
-#            f_mi = np.min(item)
-#            print("Flo min: ",f_mi)
-#        if np.max(item) > f_ma:
-#            f_ma = np.max(item)
-#            print("Flo max: ",f_ma)
-#        
-#        if np.min(item) < -800. or np.max(item) > 800.:
-#            print(np.min(item), " - ",  np.max(item), " - ", self.path_list[index])
-
 def imread(im_path, flag=1):
     im = cv2.imread(im_path, flag)
     im = im.astype(np.float32) / 255.0
     return im
 
 class EGOAutoencoderImageDataset(data.Dataset):
-    def __init__(self, root, path_list, transform, flow_transform, model):
+    def __init__(self, root, path_list, transform):
         super(EGOAutoencoderImageDataset, self).__init__()
         self.root = root
         self.path_list = path_list
         self.loader = imread
         self.transform = transform
-        self.model = model
-        self.flow_transform = flow_transform
         
     def __len__(self):
         return len(self.path_list)
@@ -82,13 +64,28 @@ class EGOAutoencoderImageDataset(data.Dataset):
         if self.transform:
             cur_l = self.transform(cur_l)
             nxt_l = self.transform(nxt_l)
-        #image = np.einsum('ijk->kji', image)
-        with torch.no_grad():
-            flow = self.model(cur_l, nxt_l)
-
-        if self.flow_transform:
-            flow = self.flow_transform(flow)
         
+        return cur_l, nxt_l
+    
+class PreprocessingCollateFn(object):
+    def __init__(self, optical_flow_model_path, flow_transform, args):
+        self.flow_transform = flow_transform
+        
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
+        ckpt = torch.load(optical_flow_model_path)
+        self.optical_flow_model.load_state_dict(ckpt['state_dict'])
+        self.optical_flow_model.to(device)
+        self.optical_flow_model.eval()
+        
+    def __call__(self, batch):
+        cur_l, nxt_l = batch
+        cur_l, nxt_l = cur_l.to("cuda"), nxt_l.to("cuda")
+        with torch.no_grad():
+            flow = self.optical_flow_model(cur_l, nxt_l)
+            flow = self.transform_flow(flow)   
         return flow
     
-    
+    def transform_flow(self, flow):
+        return self.flow_transform(flow)
