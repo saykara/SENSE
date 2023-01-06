@@ -37,49 +37,40 @@ class PreprocessingCollateFn(object):
         self.flow_transform = flow_transform
         self.final_transform = final_transform
         
-        ego_model = DataParallelWithCallback(EGOAutoEncoder(args))
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        ego_model = DataParallelWithCallback(EGOAutoEncoder(args)).cuda()
         ckpt = torch.load(encoder_path)
         state_dict = ckpt['state_dict']
         ego_model.load_state_dict(state_dict)
         self.encoder = ego_model.module.encoder
+        self.encoder.to(device)
         self.encoder.eval()
         
-        self.optical_flow_model = DataParallelWithCallback(SceneNet(args))
+        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
+        self.optical_flow_model.to(device)
         self.optical_flow_model.eval()
         
-        self.flow_lock = threading.Lock()
-        self.enc_lock = threading.Lock()
-
     def __call__(self, batch):
+        seqs, pose = batch
+        seqs, pose = seqs.to("cuda"), pose.to("cuda")
         flows = []
-        poses = []
-        for sample in batch:
-            seq = []
-            for img in sample[0]:
-                with torch.no_grad():
-                    self.flow_lock.acquire()
-                    flow = self.optical_flow_model(img[0], img[1])
-                    self.flow_lock.release()
-                    flow = self. transform_flow(flow)   
-                    self.enc_lock.acquire()
-                    flow = self.encoder(flow)
-                    self.enc_lock.release()
-                    flow = self.transform_final(flow)
-                    seq.append(flow)
-            flows.append(torch.stack(seq))
-            poses.append(sample[1])
-        return torch.stack(flows), torch.stack(poses)
+        with torch.no_grad():
+            for item in seqs:
+                flow = self.optical_flow_model(item[:][0], item[:][1])
+                flow = self.transform_flow(flow)   
+                flow = self.encoder(flow)
+                flow = self.transform_final(flow)
+                flows.append(flow)
+        return torch.stack(flows), pose
     
     def transform_flow(self, flow):
-        flow = self.flow_transform(flow)
-        return torch.unsqueeze(flow, 0)
+        return self.flow_transform(flow)
 
     def transform_final(self, flow):
-        flow = flow[4]
-        flow = torch.squeeze(flow, 0)
-        return self.final_transform(flow)
+        return self.final_transform(flow[4])
     
 class VODataset(data.Dataset):
     def __init__(self, data, input_transform, seq_len = 5):
@@ -102,10 +93,10 @@ class VODataset(data.Dataset):
                 cur_l = self.input_transform(cur_l)
                 nxt_l = self.input_transform(nxt_l)
             
-            seq.append([cur_l, nxt_l])
+            seq.append(torch.stack([cur_l, nxt_l]))
         pose = torch.tensor(self.data[index][self.seq_len])
         pose = pose.to(torch.float32)
-        return seq, pose
+        return torch.stack(seq), pose
     
     def read_poses(self, path):
         poses = []

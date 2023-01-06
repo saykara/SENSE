@@ -100,7 +100,7 @@ def make_data_loader(path, of_model, enc, args):
             drop_last=True,
             pin_memory=False,
             # worker_init_fn = lambda _: np.random.seed(int(torch.initial_seed()%(2**32 -1))),
-            collate_fn=collate_fn
+            # collate_fn=collate_fn
         ), torch.utils.data.DataLoader(
             test_set,
             batch_size=args.batch_size,
@@ -108,12 +108,11 @@ def make_data_loader(path, of_model, enc, args):
             num_workers=args.workers,
             drop_last=True,
             pin_memory=False,
-            collate_fn=collate_fn
-        )
+            # collate_fn=collate_fn
+        ), collate_fn
 
 def train(model, optimizer, data, criteria):
     input, targets = data
-    input, targets = input.to("cuda"), targets.to("cuda"), 
     model.train()
     optimizer.zero_grad()
     pose = model(input)
@@ -125,7 +124,6 @@ def train(model, optimizer, data, criteria):
 
 def validation(model, data, criteria):
     input, targets = data
-    input, targets = input.to("cuda"), targets.to("cuda"), 
     model.eval()
     with torch.no_grad():
         pose = model(input)
@@ -172,8 +170,8 @@ def main(args):
     ego_model_path = 'data/pretrained_models/model_0040.pth'
     
     # Data load
-    dataset = "/content/dataset"
-    train_loader, validation_loader = make_data_loader(dataset, holistic_scene_model_path, ego_model_path, args)
+    dataset = "E:/Thesis/content/dataset"
+    train_loader, validation_loader, preprocess = make_data_loader(dataset, holistic_scene_model_path, ego_model_path, args)
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
     # Make model
@@ -222,6 +220,7 @@ def main(args):
         epoch_start = datetime.now()
         batch_start = datetime.now()
         for batch_idx, batch_data in enumerate(train_loader):
+            batch_data = preprocess(batch_data)
             train_loss = train(model, optimizer, batch_data, criteria)
             global_step += 1
             if (batch_idx + 1) % args.print_freq == 0:
@@ -234,6 +233,7 @@ def main(args):
         val_start = datetime.now()
         val_loss = 0
         for batch_idx, batch_data in enumerate(validation_loader):
+            batch_data = preprocess(batch_data)
             val_loss += validation(model, batch_data, criteria)
         print(print_format.format(
             'Val', epoch, 0, len(validation_loader),
