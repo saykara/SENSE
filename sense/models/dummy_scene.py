@@ -77,8 +77,6 @@ class SceneNet(nn.Module):
                     raise Exception('There should be no nn.BatchNorm2d layers.')		
 
     def forward(self, cur_l, nxt_l):
-        cur_l = torch.unsqueeze(cur_l, 0)
-        nxt_l = torch.unsqueeze(nxt_l, 0)
         cur_l = self.encoder(cur_l)
         nxt_l = self.encoder(nxt_l)
         if self.flow_with_ppm:
