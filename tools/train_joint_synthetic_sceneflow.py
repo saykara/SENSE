@@ -77,9 +77,9 @@ def make_data_loader(args):
 		flow_transforms.CenterCrop((height_new, width_new))
 	])
 
-	train_data, _ = dataset_catlog.make_flow_disp_data(args.dataset)
-	flow_test_data, _ = dataset_catlog.make_flow_data('sintel')
-	_, disp_test_data = dataset_catlog.make_disp_data('sceneflow')
+	train_data, _ = dataset_catlog.make_flow_disp_data(args.base_dir, args.dataset)
+	flow_test_data, _ = dataset_catlog.make_flow_data(args.base_dir, 'sintel')
+	_, disp_test_data = dataset_catlog.make_disp_data(args.base_dir, 'sceneflow')
 
 	# train_data = train_data[:200]
 	# flow_test_data = flow_test_data[:11]

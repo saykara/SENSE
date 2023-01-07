@@ -3,6 +3,7 @@
 export PYTHONPATH=./
 
 RES_DIR=./output/sceneflow
+BASE_DIR=/content/dataset
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset sceneflow \
@@ -27,4 +28,5 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-crop-imh 384 \
    --flow-crop-imw 640 \
    --disp-loss-weight 0.25 \
-   --print-freq 20
+   --print-freq 20 \
+   --base-dir ${BASE_DIR}

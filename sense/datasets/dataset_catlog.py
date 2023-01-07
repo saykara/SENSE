@@ -69,17 +69,17 @@ def make_warp_disp_refine_data(dataset_name):
 		raise Exception('Not supported dataset: {}'.format(dataset_name))
 	return train_data, test_data
 
-def make_flow_data(dataset_name, flow_thresh=500, pass_opt='clean'):
+def make_flow_data(base_dir, dataset_name, flow_thresh=500, pass_opt='clean'):
 	cache_file_path = 'cache/optical_flow_{}.pkl'.format(dataset_name)
 	if dataset_name == 'flyingthings3d':
-		base_dir = FLYINGTHINGS3D_DIR
+		flythings3d_base_dir = os.path.join(base_dir, 'SceneFlow/FlyingThings3D_subset').replace("\\","/")
 		if os.path.exists(cache_file_path):
 			with open(cache_file_path, 'rb') as f:
 				cached_data = pickle.load(f)
 				train_data = cached_data['train_data']
 				test_data = cached_data['test_data']
 		else:
-			train_data, test_data = fth3d.make_flow_data(base_dir, flow_thresh)
+			train_data, test_data = fth3d.make_flow_data(flythings3d_base_dir, flow_thresh)
 			tmp_train_data = []
 			for i in range(len(train_data[0])):
 				tmp_train_data.append([train_data[0][i], train_data[1][i]])
@@ -101,9 +101,9 @@ def make_flow_data(dataset_name, flow_thresh=500, pass_opt='clean'):
 			  )
 		sys.stdout.flush()
 	elif dataset_name == 'sceneflow':
-		flythings3d_base_dir = FLYINGTHINGS3D_DIR
-		monkaa_base_dir = MONKAA_DIR
-		driving_base_dir = DRIVING_DIR
+		flythings3d_base_dir = os.path.join(base_dir, 'SceneFlow/FlyingThings3D_subset').replace("\\","/")
+		monkaa_base_dir = os.path.join(base_dir, 'SceneFlow/Monkaa').replace("\\","/")
+		driving_base_dir = os.path.join(base_dir, 'SceneFlow/Driving').replace("\\","/")
 		if os.path.exists(cache_file_path):
 			with open(cache_file_path, 'rb') as f:
 				cached_data = pickle.load(f)
@@ -137,7 +137,7 @@ def make_flow_data(dataset_name, flow_thresh=500, pass_opt='clean'):
 			  )
 		sys.stdout.flush()
 	elif dataset_name == 'sintel':
-		base_dir = SINTEL_DIR
+		base_dir = os.path.join(base_dir, 'MPI_Sintel').replace("\\","/")
 		train_data, test_data = sintel.make_flow_data(base_dir, pass_opt=pass_opt)
 		print('Flow: there are {} and {} for the training and testing set of Sintel'\
 			.format(len(train_data), len(test_data))
@@ -166,16 +166,16 @@ def make_flow_data(dataset_name, flow_thresh=500, pass_opt='clean'):
 			)
 		sys.stdout.flush()
 	elif dataset_name == 'kitti2015':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_flow_dataset(kitti_dir)
 	elif dataset_name == 'kitti2015_split1':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_flow_dataset(kitti_dir, split_id=1)
 	elif dataset_name == 'kitti2015_split2':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_flow_dataset(kitti_dir, split_id=2)
 	elif dataset_name == 'kitti2012':
-		kitti2012_dir = KITTI2012_DIR
+		kitti2012_dir = os.path.join(base_dir, 'KITTI_Stereo_2012').replace("\\","/")
 		train_data, test_data = kitti2012.make_flow_dataset(kitti2012_dir)
 	elif dataset_name == 'vkitti':
 		vkitti_dir = '/home/hzjiang/workspace/Data/VirtualKITTI'
@@ -184,17 +184,17 @@ def make_flow_data(dataset_name, flow_thresh=500, pass_opt='clean'):
 		raise Exception('Not supported dataset: {}'.format(dataset_name))
 	return train_data, test_data
 
-def make_disp_data(dataset_name, disp_thresh=500, pass_opt='clean'):
+def make_disp_data(base_dir, dataset_name, disp_thresh=500, pass_opt='clean'):
 	cache_file_path = 'cache/disparity_{}.pkl'.format(dataset_name)
 	if dataset_name == 'flyingthings3d':
-		base_dir = FLYINGTHINGS3D_DIR
+		flythings3d_base_dir = os.path.join(base_dir, 'SceneFlow/FlyingThings3D_subset').replace("\\","/")
 		if os.path.exists(cache_file_path):
 			with open(cache_file_path, 'rb') as f:
 				cached_data = pickle.load(f)
 				train_data = cached_data['train_data']
 				test_data = cached_data['test_data']
 		else:
-			train_data, test_data = fth3d.make_disp_data(base_dir, disp_thresh)
+			train_data, test_data = fth3d.make_disp_data(flythings3d_base_dir, disp_thresh)
 			tmp_train_data = []
 			for i in range(len(train_data[0])):
 				tmp_train_data.append([train_data[0][i], train_data[1][i]])
@@ -216,9 +216,9 @@ def make_disp_data(dataset_name, disp_thresh=500, pass_opt='clean'):
 			  )
 		sys.stdout.flush()
 	elif dataset_name == 'sceneflow':
-		flythings3d_base_dir = FLYINGTHINGS3D_DIR
-		monkaa_base_dir = MONKAA_DIR
-		driving_base_dir = DRIVING_DIR
+		flythings3d_base_dir = os.path.join(base_dir, 'SceneFlow/FlyingThings3D_subset').replace("\\","/")
+		monkaa_base_dir = os.path.join(base_dir, 'SceneFlow/Monkaa').replace("\\","/")
+		driving_base_dir = os.path.join(base_dir, 'SceneFlow/Driving').replace("\\","/")
 		if os.path.exists(cache_file_path):
 			with open(cache_file_path, 'rb') as f:
 				cached_data = pickle.load(f)
@@ -255,36 +255,36 @@ def make_disp_data(dataset_name, disp_thresh=500, pass_opt='clean'):
 		"""
 		Randomly sample 160 images for training and 40 for testing (validation)
 		"""
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_disparity_dataset(kitti_dir, split_id=1)
 	elif dataset_name == 'kitti2015_split2':
 		"""
 		Randomly sample 160 images for training and 40 for testing (validation)
 		"""
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_disparity_dataset(kitti_dir, split_id=2)
 	elif dataset_name == 'kitti2015':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_disparity_dataset(kitti_dir, split_id=-1)
 	elif dataset_name == 'kitti2012':
-		kitti2012_dir = KITTI2012_DIR
+		kitti2012_dir = os.path.join(base_dir, 'KITTI_Stereo_2012').replace("\\","/")
 		train_data, test_data = kitti2012.make_disparity_dataset(kitti2012_dir)
 	elif dataset_name == 'sintel':
-		sintel_dir = SINTEL_DIR
+		sintel_dir = os.path.join(base_dir, 'MPI_Sintel').replace("\\","/")
 		train_data, test_data = sintel.make_disp_data(sintel_dir, pass_opt)
 	elif dataset_name == 'sintel_split1':
-		sintel_dir = SINTEL_DIR
+		sintel_dir = os.path.join(base_dir, 'MPI_Sintel').replace("\\","/")
 		train_data, test_data = sintel.make_custom_disp_data(sintel_dir, pass_opt=pass_opt)
 	else:
 		raise Exception('Not supported dataset: {}'.format(dataset_name))
 	return train_data, test_data
 
-def make_flow_disp_data(dataset_name, flow_thresh=500, disp_thresh=500, 
+def make_flow_disp_data(base_dir, dataset_name, flow_thresh=500, disp_thresh=500, 
 	merge_crit='simple', pass_opt='clean+final', pseudo_gt_dir=None):
 	os.makedirs('cache', exist_ok=True)
 	cache_file_path = 'cache/flow_disp_{}.pkl'.format(dataset_name)
 	if dataset_name == 'flyingthings3d':
-		base_dir = FLYINGTHINGS3D_DIR
+		flythings3d_base_dir = os.path.join(base_dir, 'SceneFlow/FlyingThings3D_subset').replace("\\","/")
 		if os.path.exists(cache_file_path):
 			with open(cache_file_path, 'rb') as f:
 				cached_data = pickle.load(f)
@@ -292,7 +292,7 @@ def make_flow_disp_data(dataset_name, flow_thresh=500, disp_thresh=500,
 				test_data = cached_data['test_data']
 		else:
 			train_data, test_data = fth3d.make_flow_disp_data(
-				base_dir, 
+				flythings3d_base_dir, 
 				flow_thresh, 
 				disp_thresh,
 				merge_crit
@@ -318,9 +318,9 @@ def make_flow_disp_data(dataset_name, flow_thresh=500, disp_thresh=500,
 		)
 		sys.stdout.flush()
 	elif dataset_name == 'sceneflow':
-		flythings3d_base_dir = FLYINGTHINGS3D_DIR
-		monkaa_base_dir = MONKAA_DIR
-		driving_base_dir = DRIVING_DIR
+		flythings3d_base_dir = os.path.join(base_dir, 'SceneFlow/FlyingThings3D_subset').replace("\\","/")
+		monkaa_base_dir = os.path.join(base_dir, 'SceneFlow/Monkaa').replace("\\","/")
+		driving_base_dir = os.path.join(base_dir, 'SceneFlow/Driving').replace("\\","/")
 		if os.path.exists(cache_file_path):
 			with open(cache_file_path, 'rb') as f:
 				cached_data = pickle.load(f)
@@ -356,36 +356,36 @@ def make_flow_disp_data(dataset_name, flow_thresh=500, disp_thresh=500,
 		)
 		sys.stdout.flush()
 	elif dataset_name == 'kitti2015':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_flow_disp_dataset(kitti_dir, split_id=-1, pseudo_gt_dir=pseudo_gt_dir)
 	elif dataset_name == 'kitti2015_split1':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_flow_disp_dataset(kitti_dir, split_id=1, pseudo_gt_dir=pseudo_gt_dir)
 	elif dataset_name == 'kitti2015_split2':
-		kitti_dir = KITTI2015_DIR
+		kitti_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		train_data, test_data = kitti2015.make_custom_flow_disp_dataset(kitti_dir, split_id=2, pseudo_gt_dir=pseudo_gt_dir)
 	elif dataset_name == 'kitti2012':
-		kitti2012_dir = KITTI2012_DIR
+		kitti2012_dir = os.path.join(base_dir, 'KITTI_Stereo_2012').replace("\\","/")
 		train_data, test_data = kitti2012.make_flow_disp_dataset(kitti2012_dir, pseudo_gt_dir=pseudo_gt_dir)
 	elif dataset_name == 'kitti2012+kitti2015_split1':
-		kitti2012_dir = KITTI2012_DIR
+		kitti2012_dir = os.path.join(base_dir, 'KITTI_Stereo_2012').replace("\\","/")
 		train_data, test_data = kitti2012.make_flow_disp_dataset(kitti2012_dir, pseudo_gt_dir=pseudo_gt_dir)
-		kitti2015_dir = KITTI2015_DIR
+		kitti2015_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		tmp_train_data, tmp_test_data = kitti2015.make_custom_flow_disp_dataset(kitti2015_dir, split_id=1, pseudo_gt_dir=pseudo_gt_dir)
 		train_data.extend(tmp_train_data)
 		test_data.extend(tmp_test_data)
 	elif dataset_name == 'kitti2012+kitti2015':
-		kitti2012_dir = KITTI2012_DIR
+		kitti2012_dir = os.path.join(base_dir, 'KITTI_Stereo_2012').replace("\\","/")
 		train_data, test_data = kitti2012.make_flow_disp_dataset(kitti2012_dir, pseudo_gt_dir=pseudo_gt_dir)
 		kitti2015_dir = KITTI2015_DIR
 		tmp_train_data, tmp_test_data = kitti2015.make_custom_flow_disp_dataset(kitti2015_dir, pseudo_gt_dir=pseudo_gt_dir)
 		train_data.extend(tmp_train_data)
 		test_data.extend(tmp_test_data)
 	elif dataset_name == 'sintel':
-		sintel_dir = SINTEL_DIR
+		sintel_dir = os.path.join(base_dir, 'MPI_Sintel').replace("\\","/")
 		train_data, test_data = sintel.make_flow_disp_data(sintel_dir, pass_opt)
 	elif dataset_name == 'sintel_split1':
-		sintel_dir = SINTEL_DIR
+		sintel_dir = os.path.join(base_dir, 'MPI_Sintel').replace("\\","/")
 		train_data, test_data = sintel.make_custom_flow_disp_data(sintel_dir, pass_opt=pass_opt)
 	elif dataset_name == 'cityscapes':
 		if os.path.exists(cache_file_path):
