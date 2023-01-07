@@ -23,8 +23,6 @@ import numpy as np
 
 import sense.datasets.flow_transforms as flow_transforms
 
-BASE_DIR='/content/dataset'
-
 temp_save = None
 
 # https://discuss.pytorch.org/t/rmsle-loss-function/67281/2
@@ -59,7 +57,7 @@ def make_flow_data_helper(args):
             val_list.append(fly_train_dir + "/" + img)
             
     elif args.dataset == "sceneflow":
-        scene_dir = os.path.join(BASE_DIR, "flow_dataset")
+        scene_dir = os.path.join(args.base_dir, "flow_dataset")
         # Flyingthings3d
         fly_train_dir = os.path.join(scene_dir, "flyingthings3d", "train")
         for img in os.listdir(fly_train_dir):
@@ -90,8 +88,8 @@ def make_flow_data_helper(args):
                 train_list.append(os.path.join(sintel_dir, "stereo", dir, img))
                 
     elif args.dataset == "kittimalaga":
-        kitti_dir = os.path.join(BASE_DIR, "kitti_vo")
-        malaga_dir = os.path.join(BASE_DIR, "malaga")
+        kitti_dir = os.path.join(args.base_dir, "kitti_vo")
+        malaga_dir = os.path.join(args.base_dir, "malaga")
         kitti_train_sequences = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
         malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
         kitti_train, kitti_test = kitti_vo.kitti_vo_flow_data_helper(kitti_dir, kitti_train_sequences)
@@ -153,7 +151,7 @@ def make_data_loader(model, args):
     collate_fn = None
     
     path = "E:/Thesis/content/flow_dataset" if args.dataset == "local" else "/content/flow_dataset"
-    path = BASE_DIR if args.dataset == "kittimalaga" else "/content/flow_dataset"
+    path = args.base_dir if args.dataset == "kittimalaga" else "/content/flow_dataset"
     if args.cmd == "finetune":
         train_set = EGOAutoencoderImageDataset(root=path, path_list=train_data, transform=transform)
         test_set = EGOAutoencoderImageDataset(root=path, path_list=test_data, transform=transform)

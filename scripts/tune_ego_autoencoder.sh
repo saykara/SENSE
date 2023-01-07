@@ -4,7 +4,7 @@ export PYTHONPATH=./
 
 RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoderTuned
 LOAD_DIR=/content/model_0040.pth
-
+BASE_DIR=/content/dataset
 
 python tools/train_ego_autoencoder.py finetune \
    --dataset kittimalaga \
@@ -28,4 +28,5 @@ python tools/train_ego_autoencoder.py finetune \
    --flow-no-ppm \
    --flow-refinement none \
    --maxdisp 192 \
-   --corr-radius 4
+   --corr-radius 4 \
+   --base-dir ${BASE_DIR}

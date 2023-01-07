@@ -3,6 +3,7 @@
 export PYTHONPATH=./
 
 RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder
+BASE_DIR=/content/dataset
 
 python tools/train_ego_autoencoder.py pre-train \
    --dataset sceneflow \
@@ -17,4 +18,5 @@ python tools/train_ego_autoencoder.py pre-train \
    --epochs 40 \
    --bn-type syncbn \
    --batch-size 48 \
-   --print-freq 20
+   --print-freq 20 \
+   --base-dir ${BASE_DIR}
