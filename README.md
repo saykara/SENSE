@@ -11,8 +11,8 @@ Copyright (C) 2019 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
 ## Requirements
-* Python (tested with Python3.6.10)
-* PyTorch (tested with 1.3.0)
+* Python (tested with Python3.8.16)
+* PyTorch (tested with 11.6.0)
 * SynchronizedBatchNorm (borrowed from https://github.com/CSAILVision/semantic-segmentation-pytorch)
 * tensorboardX
 * tqdm
@@ -20,31 +20,124 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 * scipy
 * numpy
 
-It is strongly recommended to use a conda environment to install all the dependencies. Simply run `sh scripts/install.sh` to install all dependencies and also compile the correlation package.
+## Preparing Dataset
 
-All experiments were conducted on 8 2080ti GPUs (each with 11GB memory) or 2 M40 GPUs (each with 24GB memory).
+Because our model is versatile, it uses a lot of large data. Therefore, approximately **1.1 TB** of storage space is required for datesets. We gathered up all dataset archives in one google drive, you can access it with following link: https://drive.google.com/drive/folders/1yHMV9gm4o3anGITy1YV8HZwHRUCn4kUF?usp=sharing.  
 
-In our original implementation, we used a C++ implementation for the cost volume computation for both optical flow and stereo disparity estimations. But the C++ implementatyion strictly requires a PyTorch version of 0.4.0. In this relased version, we switched to use the implemtnation provided at <https://github.com/NVIDIA/flownet2-pytorch>. We use this implementation for stereo disparity estimation, although it only supports cost volume computation for optical flow (searching for correspondence in a local 2D range). Please consult our paper if you are interested in the running time and GPU memory usuage.
+```
+  pip install gdown
+```
+### FlyingThings3D_subset download scripts:
+```
+  gdown https://drive.google.com/file/d/1DCJVazDCDDPFFE2SboybKhKUVvTCnJsD/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-2Z8gCOjp4BaLZdTQwKTRB-sHEevox1W/view?usp=share_link
+  gdown https://drive.google.com/file/d/17oSTItHBy6HOBKnhTyKFN5i2Dh4Hmu8f/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-56X1eJMJxFlszTxVQUeaOfzmKU6T7N1/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-w5oYYvnPHf2dbKrVBrHeuJf0GiLevPa/view?usp=share_link
+```
+### Monkaa download scripts:
+```
+  gdown https://drive.google.com/file/d/1-QfVPh6qDXfJeDfKHJ_j_wco5bZTthEn/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-VmZ8gM87giEKPYy2Se75e4FlDT_ZS7z/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-s2FRMyZf-YicIbqDGuuYxMS-xQdLZj1/view?usp=share_link
+```
+### Driving download scripts:
+```
+  gdown https://drive.google.com/file/d/1-3QEO0ZVxBgEF5tSoB2fPpRIpXdb2zOY/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-JcyuA5vVq7GZdJx7_bs3ynWwjkQ41vf/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-D18UuJOmP83gYzUIyyNHmH1hzdcjQ9N/view?usp=share_link
+```
+### MPI_Sintel download scripts:
+```
+  gdown https://drive.google.com/file/d/102dFyM1iV42t6BJQxSipT9d-R43Sltv7/view?usp=share_link
+  gdown https://drive.google.com/file/d/10BSBCbzyWzid0Jo61qJ9ak8En7dSf7rc/view?usp=share_link
+```
+### KITTI_VO download scripts:
+```
+  gdown https://drive.google.com/file/d/1e08fgGRHjcm5P4j0L6LRuCkMz_PJbQJ4/view?usp=share_link
+  gdown https://drive.google.com/file/d/1-3JU2P6OSaudYCTR4Cy5c4utAJXF9KUd/view?usp=share_link
+```
+### Malaga download scripts:
+```
+  gdown https://drive.google.com/file/d/16Us_VYkZxedJ1nQFsegY4Py8m0b1GtjT/view?usp=share_link
+```
 
-## Quick Start
-First run `sh scripts/download_pretrained_models.sh` to download pre-trained models. Run `python tools/demo.py` then for a quick demo.
+## File Structure
+Our expected dataset structure as follows:
 
-Run `sh scripits/make_kitti2015_submission.sh` to generate results that can be submitted to the online [KITTI scene flow estimation benchmark](http://www.cvlibs.net/datasets/kitti/eval_scene_flow.php). You should be able to get the following results.
+```
+<Base_dir>
+|-- SceneFlow
+|   |-- Driving
+|   |   |-- disparity
+|   |   |-- frames_cleanpass
+|   |   |-- optical_flow
+|   |-- FlyingThings3D_subset
+|   |   |-- train
+|   |   |   |-- disparity
+|   |   |   |-- disparity_occlusions
+|   |   |   |-- flow
+|   |   |   |-- flow_occlusions
+|   |   |   |-- image_clean
+|   |   |-- val
+|   |   |   |-- disparity
+|   |   |   |-- disparity_occlusions
+|   |   |   |-- flow
+|   |   |   |-- flow_occlusions
+|   |   |   |-- image_clean
+|   |-- Monkaa
+|   |   |-- disparity
+|   |   |-- frames_cleanpass
+|   |   |-- optical_flow
+|-- MPI_Sintel
+|   |-- training
+|   |-- test
+|   |-- stereo
+|   |   |-- training
+|-- kitti_vo
+|   |-- dataset
+|   |   |-- poses
+|   |   |-- sequences
+|   |   |   |-- 00
+|   |   |   |-- 01
+|   |   |   |-- ..
+|   |   |   |-- 22
+|-- malaga
+|   |-- malaga-urban-dataset-extract-01
+|   |-- malaga-urban-dataset-extract-02
+|   |-- ..
+|   |-- malaga-urban-dataset-extract-15
+```
 
-| Error | D1-bg	| D1-fg	| D1-all	| D2-bg	| D2-fg	| D2-all	| Fl-bg	| Fl-fg	| Fl-all	| SF-bg	| SF-fg	| SF-all
-| --- | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: 
-| All/Est | 2.07 | 3.01 | 2.22 | 4.90 | 10.83 | 5.89 | 7.30 | 9.33 | 7.64 | 8.36 | 15.49 | 9.55
+## Pre-Installations 
+
+```
+  pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu112
+  pip install timm
+  pip install scikit-image
+  pip install opencv-python
+  pip install sklearn
+  pip install joblib
+  pip install matplotlib
+  pip install ninja
+```
+
+To compile the correlation package, run `sh scripts/install.sh`. 
 
 ## Training
-See [TRAINING.md](TRAINING.md) for details.
 
-## Citation
-If you find SENSE useful for your research, please consider citing it.
-```BibTeX
-@InProceedings{jiang2019sense,
-author = {Jiang, Huaizu and Sun, Deqing and Jampani, Varun and Lv, Zhaoyang and Learned-Miller, Erik and Kautz, Jan},
-title = {SENSE: A Shared Encoder Network for Scene-Flow Estimation},
-booktitle = {ICCV},
-year = {2019}
-}
-```
+All hyper-parameters can be configured by training script arguments, you can access them under the **scripts** directory. The most important part is providing the base directory of datasets. Open *scripts/train_synthetic_sceneflow.sh* file and change the BASE_DIR variable according to <Base_dir> name you set before. 
+
+After everthing is configured, run `sh scripts/train_synthetic_sceneflow.sh` command to start training. It will take a little while to cache the dataset when running it the first time. 
+
+
+The log message structure of losses as follows; 
+
+'Train',  global step, epoch, batch id, total batch, overall loss, 
+		flow loss, flow occ loss, disp loss, disp occ loss, batch process time, 
+        elapsed time from beginning, learning rate
+
+
+'Test', global step, epoch, total flow loss, total flow occ loss,
+		total disp loss, total_test_err_pct, total disp occ loss,
+			  flow loss, flow occ loss, disp loss, disp occ loss, elapsed time, learning rate
