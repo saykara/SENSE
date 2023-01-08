@@ -141,3 +141,19 @@ The log message structure of losses as follows;
 'Test', global step, epoch, total flow loss, total flow occ loss,
 		total disp loss, total_test_err_pct, total disp occ loss,
 			  flow loss, flow occ loss, disp loss, disp occ loss, elapsed time, learning rate
+
+## What I need:
+
+I need model outputs (will be recorded to <RES_DIR> indicated in script you run) and console log messages consist of training and testing losses. Trained models will be saved after every epoch. 
+
+PS 1: In case of any interruption, we can continue training with latest epoch's model. You just need to add "loadmodel" and "resume" parameters and add model's path to them.
+```
+  ..
+  --print-freq 20 \
+  --base-dir ${BASE_DIR} \
+  --loadmodel <./output/sceneflow/model_0010.pth> \
+  --resume <./output/sceneflow/model_0010.pth>
+```
+
+
+PS 2: I wasn't able to train model with all dataset before and I don't know when will model start overfitting. The initial model decreases learning rate at 70th epoch so I kept it. But if you provide me log messages time-to-time, we can change the lr decay in case of overfitting.
