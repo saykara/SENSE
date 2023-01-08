@@ -146,13 +146,13 @@ The log message structure of losses as follows;
 
 I need model outputs (will be recorded to <RES_DIR> indicated in script you run) and console log messages consist of training and testing losses. Trained models will be saved after every epoch. 
 
-PS 1: In case of any interruption, we can continue training with latest epoch's model. You just need to add "loadmodel" and "resume" parameters and add model's path to them.
+PS 1: In case of any interruption, we can continue training with latest epoch's model. You just need to add "loadmodel" and "resume" parameters to script file and add model's path to them.
 ```
   ..
   --print-freq 20 \
   --base-dir ${BASE_DIR} \
-  --loadmodel <./output/sceneflow/model_0010.pth> \
-  --resume <./output/sceneflow/model_0010.pth>
+  --loadmodel ./output/sceneflow/model_0010.pth \
+  --resume ./output/sceneflow/model_0010.pth
 ```
 
 
