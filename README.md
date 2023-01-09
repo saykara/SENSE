@@ -25,41 +25,41 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 Because our model is versatile, it uses a lot of large data. Therefore, approximately **1.1 TB** of storage space is required for datesets. We gathered up all dataset archives in one google drive, you can access it with following link: https://drive.google.com/drive/folders/1yHMV9gm4o3anGITy1YV8HZwHRUCn4kUF?usp=sharing.  
 
 ```
-  pip install gdown
+pip install gdown
 ```
 ### FlyingThings3D_subset download scripts:
 ```
-  gdown https://drive.google.com/file/d/1DCJVazDCDDPFFE2SboybKhKUVvTCnJsD/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-2Z8gCOjp4BaLZdTQwKTRB-sHEevox1W/view?usp=share_link
-  gdown https://drive.google.com/file/d/17oSTItHBy6HOBKnhTyKFN5i2Dh4Hmu8f/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-56X1eJMJxFlszTxVQUeaOfzmKU6T7N1/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-w5oYYvnPHf2dbKrVBrHeuJf0GiLevPa/view?usp=share_link
+gdown 1DCJVazDCDDPFFE2SboybKhKUVvTCnJsD
+gdown 1-2Z8gCOjp4BaLZdTQwKTRB-sHEevox1W
+gdown 17oSTItHBy6HOBKnhTyKFN5i2Dh4Hmu8f
+gdown 1-56X1eJMJxFlszTxVQUeaOfzmKU6T7N1
+gdown 1-w5oYYvnPHf2dbKrVBrHeuJf0GiLevPa
 ```
 ### Monkaa download scripts:
 ```
-  gdown https://drive.google.com/file/d/1-QfVPh6qDXfJeDfKHJ_j_wco5bZTthEn/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-VmZ8gM87giEKPYy2Se75e4FlDT_ZS7z/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-s2FRMyZf-YicIbqDGuuYxMS-xQdLZj1/view?usp=share_link
+gdown 1-QfVPh6qDXfJeDfKHJ_j_wco5bZTthEn
+gdown 1-VmZ8gM87giEKPYy2Se75e4FlDT_ZS7z
+gdown 1-s2FRMyZf-YicIbqDGuuYxMS-xQdLZj1
 ```
 ### Driving download scripts:
 ```
-  gdown https://drive.google.com/file/d/1-3QEO0ZVxBgEF5tSoB2fPpRIpXdb2zOY/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-JcyuA5vVq7GZdJx7_bs3ynWwjkQ41vf/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-D18UuJOmP83gYzUIyyNHmH1hzdcjQ9N/view?usp=share_link
+gdown 1-3QEO0ZVxBgEF5tSoB2fPpRIpXdb2zOY
+gdown 1-JcyuA5vVq7GZdJx7_bs3ynWwjkQ41vf
+gdown 1-D18UuJOmP83gYzUIyyNHmH1hzdcjQ9N
 ```
 ### MPI_Sintel download scripts:
 ```
-  gdown https://drive.google.com/file/d/102dFyM1iV42t6BJQxSipT9d-R43Sltv7/view?usp=share_link
-  gdown https://drive.google.com/file/d/10BSBCbzyWzid0Jo61qJ9ak8En7dSf7rc/view?usp=share_link
+gdown 102dFyM1iV42t6BJQxSipT9d-R43Sltv7
+gdown 10BSBCbzyWzid0Jo61qJ9ak8En7dSf7rc
 ```
 ### KITTI_VO download scripts:
 ```
-  gdown https://drive.google.com/file/d/1e08fgGRHjcm5P4j0L6LRuCkMz_PJbQJ4/view?usp=share_link
-  gdown https://drive.google.com/file/d/1-3JU2P6OSaudYCTR4Cy5c4utAJXF9KUd/view?usp=share_link
+gdown 1e08fgGRHjcm5P4j0L6LRuCkMz_PJbQJ4
+gdown 1-3JU2P6OSaudYCTR4Cy5c4utAJXF9KUd
 ```
 ### Malaga download scripts:
 ```
-  gdown https://drive.google.com/file/d/16Us_VYkZxedJ1nQFsegY4Py8m0b1GtjT/view?usp=share_link
+gdown 16Us_VYkZxedJ1nQFsegY4Py8m0b1GtjT
 ```
 
 ## File Structure
@@ -112,14 +112,14 @@ Our expected dataset structure as follows:
 ## Pre-Installations 
 
 ```
-  pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu112
-  pip install timm
-  pip install scikit-image
-  pip install opencv-python
-  pip install sklearn
-  pip install joblib
-  pip install matplotlib
-  pip install ninja
+pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu112
+pip install timm
+pip install scikit-image
+pip install opencv-python
+pip install sklearn
+pip install joblib
+pip install matplotlib
+pip install ninja
 ```
 
 To compile the correlation package, run `sh scripts/install.sh`. 
@@ -148,11 +148,11 @@ I need model outputs (will be recorded to <RES_DIR> indicated in script you run)
 
 PS 1: In case of any interruption, we can continue training with latest epoch's model. You just need to add "loadmodel" and "resume" parameters to script file and add model's path to them.
 ```
-  ..
-  --print-freq 20 \
-  --base-dir ${BASE_DIR} \
-  --loadmodel ./output/sceneflow/model_0010.pth \
-  --resume ./output/sceneflow/model_0010.pth
+..
+--print-freq 20 \
+--base-dir ${BASE_DIR} \
+--loadmodel ./output/sceneflow/model_0010.pth \
+--resume ./output/sceneflow/model_0010.pth
 ```
 
 
