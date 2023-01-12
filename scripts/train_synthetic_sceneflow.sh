@@ -19,7 +19,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 100 \
+   --epochs 25 \
    --bn-type syncbn \
    --batch-size 8 \
    --corr-radius 4  \
@@ -30,3 +30,5 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --disp-loss-weight 0.25 \
    --print-freq 20 \
    --base-dir ${BASE_DIR}
+   --kernel-size 7 \
+   --dec-kernel-size 7
