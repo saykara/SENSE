@@ -3,11 +3,11 @@
 export PYTHONPATH=./
 
 RES_DIR=./output/sceneflow
-BASE_DIR=/content/dataset
+BASE_DIR=/content
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset sceneflow \
-   --enc-arch psmnext \
+   --enc-arch psm \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
@@ -15,8 +15,8 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --workers 16 \
-   --lr 0.0001 \
+   --workers 2 \
+   --lr 0.001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
    --epochs 100 \
