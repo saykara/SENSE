@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=./output/sceneflow
+RES_DIR=/drive/MyDrive/Thesis/Model
 BASE_DIR=/content
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
