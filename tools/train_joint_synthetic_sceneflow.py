@@ -12,6 +12,7 @@ import skimage.io
 import skimage.transform
 import numpy as np
 import time
+import datetime
 import math
 
 import torch
@@ -426,7 +427,7 @@ def main(args):
 	min_loss=100000000000000000
 	min_epo=0
 	min_err_pct = 10000
-	start_full_time = time.time()
+	start_full_time = datetime.now()
 
 	train_print_format = '{}\t{:d}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{:.3f}\t{:.3f}'\
 		'\t{:.3f}\t{:.3f}\t{:.3f}\t{:.3f}\t{:.6f}'
@@ -445,7 +446,8 @@ def main(args):
 		lr = adjust_learning_rate(optimizer, epoch, len(train_loader))
 			 
 		## training ##
-		start_time = time.time() 
+		start_time = time.time()
+		epoch_time = datetime.now() 
 		for batch_idx, batch_data in enumerate(train_loader):
 			end = time.time()
 			train_res = train(model, optimizer, batch_data, criteria, args)
@@ -508,7 +510,8 @@ def main(args):
 		))
 		
 		save_checkpoint(model, optimizer, epoch, global_step, args)
-	print('Elapsed time = %.2f HR' %((time.time() - start_full_time)/3600))
+		print(f'Elapsed epoch time = {datetime.now() - epoch_time}')
+	print(f'Elapsed time = {datetime.now() - start_full_time}')
 
 if __name__ == '__main__':
 	parser = parse_args()
