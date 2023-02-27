@@ -7,7 +7,7 @@ BASE_DIR=/content
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset sceneflow \
-   --enc-arch psm \
+   --enc-arch psmnext \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
@@ -16,7 +16,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
    --workers 2 \
-   --lr 0.001 \
+   --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
    --epochs 100 \
