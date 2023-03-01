@@ -15,6 +15,8 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
+   --loadmodel /content/model_0007.pth \
+   --resume /content/model_0007.pth \
    --workers 2 \
    --lr 0.001 \
    --lr-steps 70 \
@@ -32,3 +34,4 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --base-dir ${BASE_DIR} \
    --kernel-size 7 \
    --dec-kernel-size 7
+   
