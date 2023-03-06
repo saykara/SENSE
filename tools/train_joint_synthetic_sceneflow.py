@@ -339,7 +339,7 @@ def adjust_learning_rate(optimizer, epoch, iter_per_epoch):
 
 def save_checkpoint(model, optimizer, epoch, global_step, args):
 	#SAVE
-	save_dir = model_utils.make_joint_checkpoint_name(args, epoch)
+	save_dir = "PSMNeXT_0.0002"
 	save_dir = os.path.join(args.savemodel, save_dir)
 	if not os.path.exists(save_dir):
 		os.makedirs(save_dir)
