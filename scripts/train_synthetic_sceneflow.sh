@@ -18,7 +18,7 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --loadmodel /content/model_0007.pth \
    --resume /content/model_0007.pth \
    --workers 2 \
-   --lr 0.0004 \
+   --lr 0.001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
    --epochs 100 \
