@@ -32,6 +32,6 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --disp-loss-weight 0.25 \
    --print-freq 20 \
    --base-dir ${BASE_DIR} \
-   --kernel-size 7 \
-   --dec-kernel-size 7
+   --kernel-size 15 \
+   --dec-kernel-size 15
    
