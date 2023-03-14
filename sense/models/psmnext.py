@@ -56,7 +56,7 @@ class PSMNextEncoder(nn.Module):
                         )
         self.layer1 = self._make_layer(BasicBlock, 32, 3, kernel_size, 2,pad,1, bn_type)
         self.layer2 = self._make_layer(BasicBlock, 64, 3, kernel_size, 2,pad,1, bn_type) 
-        self.layer3 = self._make_layer(BasicBlock, 128, 16, kernel_size, 2,pad,1, bn_type)
+        self.layer3 = self._make_layer(BasicBlock, 128, 9, kernel_size, 2,pad,1, bn_type)
         self.layer4 = self._make_layer(BasicBlock, 128, 3, kernel_size, 2,pad,1, bn_type)
 
         if with_ppm:
