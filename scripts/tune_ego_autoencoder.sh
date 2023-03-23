@@ -5,7 +5,7 @@ export PYTHONPATH=./
 RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder/old
 LOAD_DIR=/content/model_0040.pth
 BASE_DIR=/content/dataset
-FLOW_MODEL_DIR=/content/model_0001.pth
+FLOW_MODEL_DIR=/content/model_0068.pth
 
 python tools/train_ego_autoencoder.py finetune \
    --dataset kittimalaga \
