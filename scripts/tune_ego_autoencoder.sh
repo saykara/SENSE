@@ -31,4 +31,5 @@ python tools/train_ego_autoencoder.py finetune \
    --maxdisp 192 \
    --corr-radius 4 \
    --base-dir ${BASE_DIR} \
-   --flow-model ${FLOW_MODEL_DIR}
+   --flow-model ${FLOW_MODEL_DIR} \
+   --kernel-size 7
