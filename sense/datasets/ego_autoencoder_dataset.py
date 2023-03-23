@@ -6,7 +6,7 @@ import torch
 
 import sense.datasets.dataset_utils as du
 from sense.lib.nn import DataParallelWithCallback
-from sense.models.dummy_scene import SceneNet
+from sense.models.dummy_scene import SceneNet, SceneNeXt
         
 def load_flow(path):
     if path.endswith('.pfm'):
@@ -73,7 +73,10 @@ class PreprocessingCollateFn(object):
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
+        if args.enc_arch == "psm":
+            self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
+        else:
+            self.optical_flow_model = DataParallelWithCallback(SceneNeXt(args)).cuda()
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
         self.optical_flow_model.to(device)
