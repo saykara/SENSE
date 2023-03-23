@@ -2,10 +2,10 @@
 
 export PYTHONPATH=./
 
-RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder/old
+RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder/new
 LOAD_DIR=/content/model_0040.pth
 BASE_DIR=/content/dataset
-FLOW_MODEL_DIR=/content/model_0001.pth
+FLOW_MODEL_DIR=/content/model_0068.pth
 
 python tools/train_ego_autoencoder.py finetune \
    --dataset kittimalaga \
@@ -22,7 +22,7 @@ python tools/train_ego_autoencoder.py finetune \
    --bn-type syncbn \
    --batch-size 24 \
    --print-freq 20 \
-   --enc-arch psm \
+   --enc-arch psmnext \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
