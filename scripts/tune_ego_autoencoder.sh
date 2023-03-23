@@ -2,9 +2,10 @@
 
 export PYTHONPATH=./
 
-RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoderTuned
+RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder/old
 LOAD_DIR=/content/model_0040.pth
 BASE_DIR=/content/dataset
+FLOW_MODEL_DIR=/content/model_0001.pth
 
 python tools/train_ego_autoencoder.py finetune \
    --dataset kittimalaga \
@@ -17,9 +18,9 @@ python tools/train_ego_autoencoder.py finetune \
    --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 40 \
+   --epochs 80 \
    --bn-type syncbn \
-   --batch-size 3 \
+   --batch-size 24 \
    --print-freq 20 \
    --enc-arch psm \
    --dec-arch pwcdc \
@@ -29,4 +30,5 @@ python tools/train_ego_autoencoder.py finetune \
    --flow-refinement none \
    --maxdisp 192 \
    --corr-radius 4 \
-   --base-dir ${BASE_DIR}
+   --base-dir ${BASE_DIR} \
+   --flow-model ${FLOW_MODEL_DIR}

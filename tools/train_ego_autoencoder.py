@@ -91,7 +91,7 @@ def make_flow_data_helper(args):
         kitti_dir = os.path.join(args.base_dir, "kitti_vo")
         malaga_dir = os.path.join(args.base_dir, "malaga")
         kitti_train_sequences = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
-        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+        malaga_train_sequences = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
         kitti_train, kitti_test = kitti_vo.kitti_vo_flow_data_helper(kitti_dir, kitti_train_sequences)
         malaga_train, malaga_test = malaga.malaga_flow_data_helper(malaga_dir, malaga_train_sequences)
         train_list = kitti_train + malaga_train
@@ -197,11 +197,7 @@ def validation(model, data, criteria):
         
 def save_checkpoint(model, optimizer, epoch, flag, args):
     #SAVE
-    global temp_save
-    now = datetime.now().strftime("%d-%m-%H-%M")
-    if temp_save == None:
-        temp_save = f"ego_autoencoder_{now}"
-    save_dir = os.path.join(args.savemodel, temp_save)
+    save_dir = args.savemodel
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -314,7 +310,7 @@ def tune(args):
     np.random.seed(args.seed)  
     random.seed(args.seed)
     
-    holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
+    holistic_scene_model_path = args.flow_model
     
     # Data load
     train_loader, validation_loader, preprocess = make_data_loader(holistic_scene_model_path, args)
