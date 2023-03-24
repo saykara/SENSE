@@ -251,7 +251,7 @@ def main(args):
     )
     # Criteria
     criteria = RMSLELoss()
-
+    start_epoch = 1
     # Save & Load model
     if args.loadmodel is not None:
         ckpt = torch.load(args.loadmodel)
@@ -270,7 +270,7 @@ def main(args):
     print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
 
     # Train
-    start_epoch = 1
+   
     global_step = 0
     lr = args.lr
     train_start = datetime.now()
