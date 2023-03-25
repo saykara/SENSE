@@ -16,7 +16,7 @@ python tools/train_ego_autoencoder.py finetune \
    --resume ${LOAD_DIR} \
    --workers 2 \
    --lr 0.0001 \
-   --lr-steps 70 \
+   --lr-steps 8 \
    --lr-gamma 0.1 \
    --epochs 80 \
    --bn-type syncbn \
