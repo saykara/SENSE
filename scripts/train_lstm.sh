@@ -19,7 +19,7 @@ python tools/train_lstm.py pre-train \
    --lr 0.0001 \
    --lr-steps 70 \
    --lr-gamma 0.1 \
-   --epochs 60 \
+   --epochs 72 \
    --bn-type syncbn \
    --batch-size 20 \
    --corr-radius 4  \
