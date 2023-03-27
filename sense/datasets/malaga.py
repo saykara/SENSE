@@ -77,7 +77,7 @@ def calc_pose_diff(imu_np, cur_time, next_time):
         position += imu_np[i][1:4] * delta_t * delta_t
     return np.concatenate((position, angle))
 
-def malaga_data_helper(path, train_sequences):
+def malaga_data_helper(path, train_sequences, val_sequences):
     global flag, last_idx, ls
     malaga_train = []
     malaga_test = []
@@ -110,7 +110,11 @@ def malaga_data_helper(path, train_sequences):
             if flag:
                 i += 1
                 sequence.append(pose)
-                malaga_train.append(sequence) if int(seq.split("-")[-1]) in train_sequences else malaga_test.append(sequence)
+                if int(seq.split("-")[-1]) in train_sequences:
+                    malaga_train.append(sequence)  
+                else:
+                    if int(seq.split("-")[-1]) in val_sequences:
+                        malaga_test.append(sequence)
         print(f"{str(datetime.now() - t)}")
         print(f"{i}/{len(image_list) / 2}")
     return malaga_train, malaga_test

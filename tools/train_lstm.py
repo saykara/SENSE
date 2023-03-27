@@ -41,9 +41,11 @@ def make_data_helper(path):
         train_data, test_data = malaga.malaga_data_helper(path, train_sequences)
     elif args.dataset == "mixed":
         kitti_train_sequences = [0, 2, 8, 9]
+        kitti_val_sequences = [3, 10]
         malaga_train_sequences = [1, 4, 6, 7, 8, 10, 11]
-        kitti_train, kitti_test = kitti_vo.kitti_vo_data_helper(path, kitti_train_sequences)
-        malaga_train, malaga_test = malaga.malaga_data_helper(path, malaga_train_sequences)
+        malaga_val_sequences = [2, 9]
+        kitti_train, kitti_test = kitti_vo.kitti_vo_data_helper(path, kitti_train_sequences, kitti_val_sequences)
+        malaga_train, malaga_test = malaga.malaga_data_helper(path, malaga_train_sequences, malaga_val_sequences)
         train_data = kitti_train + malaga_train
         test_data = kitti_test + malaga_test
     else:
@@ -164,10 +166,10 @@ def main(args):
     random.seed(args.seed)
     
     # Flow producer model (PSMNexT)
-    holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
+    holistic_scene_model_path = '/content/model_0068.pth'
     
     # EGO encoder model
-    ego_model_path = 'data/pretrained_models/model_0040.pth'
+    ego_model_path = '/content/model_0012.pth'
     
     # Data load
     train_loader, validation_loader, preprocess = make_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, args)
@@ -187,7 +189,7 @@ def main(args):
     )
     # TODO Criteria
     criteria = nn.MSELoss()
-
+    start_epoch = 1
     # Save & Load model
     if args.loadmodel is not None:
         ckpt = torch.load(args.loadmodel)
@@ -209,7 +211,6 @@ def main(args):
     model.to(device)
 
     # Train
-    start_epoch = 1
     global_step = 0
     lr = args.lr
     

@@ -7,7 +7,7 @@ import threading
 
 from sense.models.ego_autoencoder import EGOAutoEncoder
 from sense.lib.nn import DataParallelWithCallback
-from sense.models.dummy_scene import SceneNet
+from sense.models.dummy_scene import SceneNet, SceneNeXt
 
 f_mi = -5.0
 f_ma = 5.0

@@ -69,7 +69,7 @@ def load_calib(path):
                 calib.append(get_calib_matrix(calib_right))
     return calib
                 
-def kitti_vo_data_helper(path, train_sequences):
+def kitti_vo_data_helper(path, train_sequences, val_sequences):
     kitti_vo_train = []
     kitti_vo_test = []
     
@@ -91,7 +91,11 @@ def kitti_vo_data_helper(path, train_sequences):
                 sequence.append([cur_left, nxt_left])
             sequence.append(calc_pose_diff(pose_list.get(f"{i:02}")[j], pose_list.get(f"{i:02}")[j + 4]))
             # sequence.append(calib)
-            kitti_vo_train.append(sequence) if i in train_sequences else kitti_vo_test.append(sequence)
+            if i in train_sequences:
+                kitti_vo_train.append(sequence)  
+            else:
+                if i in val_sequences:
+                    kitti_vo_test.append(sequence)
     return kitti_vo_train, kitti_vo_test
 
 def kitti_vo_flow_data_helper(path, train_sequences):
