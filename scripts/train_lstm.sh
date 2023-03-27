@@ -7,7 +7,7 @@ BASE_DIR=/content/dataset
 
 python tools/train_lstm.py pre-train \
    --dataset mixed \
-   --enc-arch psm \
+   --enc-arch psmnext \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
@@ -29,4 +29,5 @@ python tools/train_lstm.py pre-train \
    --flow-crop-imw 640 \
    --disp-loss-weight 0.25 \
    --print-freq 20 \
-   --base-dir ${BASE_DIR}
+   --base-dir ${BASE_DIR} \
+   --kernel-size 7
