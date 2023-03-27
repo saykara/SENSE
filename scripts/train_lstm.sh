@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/new
+RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/old
 BASE_DIR=/content/dataset
 
 python tools/train_lstm.py pre-train \
