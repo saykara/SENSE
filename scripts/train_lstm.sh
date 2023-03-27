@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=./output/sceneflow
+RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/new
 BASE_DIR=/content/dataset
 
 python tools/train_lstm.py pre-train \
