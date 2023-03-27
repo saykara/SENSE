@@ -47,7 +47,7 @@ class PreprocessingCollateFn(object):
         self.encoder.to(device)
         self.encoder.eval()
         
-        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
+        self.optical_flow_model = DataParallelWithCallback(SceneNeXt(args)).cuda()
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
         self.optical_flow_model.to(device)
