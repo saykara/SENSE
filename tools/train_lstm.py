@@ -203,8 +203,7 @@ def main(args):
     # Print format
     print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    model = model.cuda()
 
     # Train
     global_step = 0
