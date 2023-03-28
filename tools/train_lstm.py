@@ -24,13 +24,13 @@ from sense.models.dummy_scene import SceneNet
 
 temp_save = None
 
-class RMSLELoss(nn.Module):
+class MSELoss(nn.Module):
     def __init__(self):
         super().__init__()
         self.mse = nn.MSELoss()
 
     def forward(self, pred, actual):
-        return torch.sqrt(self.mse(torch.log(pred + 1), torch.log(actual + 1)))
+        return self.mse(pred[:,:3], actual[:,:3]) + 0.25 * self.mse(pred[:, 3:], actual[:, 3:])
 
 def make_data_helper(path):
     if args.dataset == "kitti_vo":
@@ -184,7 +184,7 @@ def main(args):
         weight_decay=0.0004
     )
     # TODO Criteria
-    criteria = nn.MSELoss()
+    criteria = MSELoss()
     start_epoch = 1
     # Save & Load model
     if args.loadmodel is not None:
