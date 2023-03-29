@@ -6,7 +6,7 @@ RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/new
 BASE_DIR=/content/dataset
 
 python tools/train_lstm.py pre-train \
-   --dataset mixed \
+   --dataset kitti_vo \
    --enc-arch psmnext \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
@@ -15,13 +15,13 @@ python tools/train_lstm.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --workers 0 \
+   --workers 2 \
    --lr 0.0001 \
    --lr-steps 20 \
    --lr-gamma 0.1 \
    --epochs 60 \
    --bn-type syncbn \
-   --batch-size 36 \
+   --batch-size 24 \
    --corr-radius 4  \
    --disp-crop-imh 256 \
    --disp-crop-imw 512 \
