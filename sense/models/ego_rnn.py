@@ -13,19 +13,16 @@ class EgoRnn(nn.Module):
         self.layers = layers
         self.linear_dim = linear_dim
         
-        self.maxpool = nn.MaxPool2d(2)
         self.lstm = nn.LSTM(input_size=self.input_dim, hidden_size=self.hidden_dim, num_layers=self.layers)
         self.linear1 = nn.Linear(self.hidden_dim, self.linear_dim)
         self.linear2 = nn.Linear(self.linear_dim, 6)
 
     def forward(self, seqs):
-        for i in range(seqs.size(1)):
-            item = seqs[:, i, :, :, :]
-            item = self.maxpool(item)
-            item = item.view(item.size(0), item.size(1), item.size(2) * item.size(3))
-            hn, cn = self.init_states(seqs.size(2))
-            out, (hn, cn) = self.lstm(item, (hn, cn))
-        x = self.linear1(out[:, -1, :])
+        seqs = seqs.permute(1, 0, 2, 3, 4)
+        seqs = seqs.view(seqs.size(0), seqs.size(1), seqs.size(2) * seqs.size(3) * seqs.size(4))
+        hn, cn = self.init_states(seqs.size(1))
+        out, (hn, cn) = self.lstm(seqs, (hn, cn))
+        x = self.linear1(out[-1, :, :])
         x = self.linear2(x)
         return x
 

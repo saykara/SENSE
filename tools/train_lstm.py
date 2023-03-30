@@ -174,7 +174,7 @@ def main(args):
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
     # Make model
-    model = EgoRnn(30)
+    model = EgoRnn(30720)
     print('Number of LSTM parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()]))
     )

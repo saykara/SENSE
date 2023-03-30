@@ -4,6 +4,7 @@ export PYTHONPATH=./
 
 RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/old
 BASE_DIR=/content/dataset
+LOAD_DIR=/content/model_0040.pth
 
 python tools/train_lstm.py pre-train \
    --dataset kitti_vo \
@@ -15,6 +16,8 @@ python tools/train_lstm.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
+   --loadmodel ${LOAD_DIR} \
+   --resume ${LOAD_DIR} \
    --workers 2 \
    --lr 0.0001 \
    --lr-steps 20 \
