@@ -175,6 +175,7 @@ def main(args):
     
     # Make model
     model = EgoRnn(30720)
+    model = model.cuda()
     print('Number of LSTM parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()]))
     )
@@ -204,8 +205,6 @@ def main(args):
 
     # Print format
     print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
-
-    model = model.cuda()
 
     # Train
     global_step = 0
