@@ -24,7 +24,7 @@ python tools/train_lstm.py pre-train \
    --lr-gamma 0.1 \
    --epochs 60 \
    --bn-type syncbn \
-   --batch-size 24 \
+   --batch-size 22 \
    --corr-radius 4  \
    --disp-crop-imh 256 \
    --disp-crop-imw 512 \
