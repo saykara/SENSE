@@ -135,7 +135,7 @@ def make_data_loader(model, args):
         
         flow_transform = transforms.Compose([
             #flow_transforms.ArrayToTensor(),
-           flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-360.0, 360.0])])
+           flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-800.0, 800.0])])
     else:
         transform = transforms.Compose([
             flow_transforms.ArrayToTensor(),
