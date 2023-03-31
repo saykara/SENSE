@@ -34,8 +34,9 @@ class RMSLELoss(nn.Module):
 
 def make_data_helper(path):
     if args.dataset == "kitti_vo":
-        train_sequences = [0, 2, 8, 9]
+        train_sequences = [0, 2, 4, 5, 6, 8, 9]
         kitti_val_sequences = [3, 10]
+        # 1, 7 will be test
         train_data, test_data = kitti_vo.kitti_vo_data_helper(path, train_sequences, kitti_val_sequences)
     elif args.dataset == "malaga":
         train_sequences = [1, 4, 6, 7, 8, 10, 11]
