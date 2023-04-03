@@ -26,11 +26,11 @@ def min_max_flow(item):
         
 def min_max_eva(item):
     global e_mi, e_ma
-    if item < e_mi:
-        e_mi = item
+    if torch.min(item) < e_mi:
+        e_mi = torch.min(item)
         print("Eva min: ", e_mi)
-    if item > e_ma:
-        e_ma = item
+    if torch.max(item) > e_ma:
+        e_ma = torch.max(item)
         print("Eva max: ",e_ma)
 
 class PreprocessingCollateFn(object):
@@ -67,8 +67,9 @@ class PreprocessingCollateFn(object):
                 output_tensor1 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, :3, :, :]
                 output_tensor2 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, 3:, :, :]
                 flow = self.optical_flow_model(output_tensor1, output_tensor2)
-                flow = self.transform_flow(flow)
+                # flow = self.transform_flow(flow)
                 flow = self.encoder(flow)
+                min_max_eva(flow)
                 flow = self.transform_final(flow)
                 flow = self.maxpool(flow)
                 flows.append(flow)
