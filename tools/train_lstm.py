@@ -82,10 +82,10 @@ def make_data_loader(path, of_model, enc, args):
         transforms.RandomHorizontalFlip(0.3),
         transforms.RandomVerticalFlip(0.3)])
     flow_transform = torchvision.transforms.Compose([
-        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-400.0, 400.0]),
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-1000.0, 1000.0]),
     ])
     final_transform = torchvision.transforms.Compose([
-        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-210.0, 210.0]),
     ])
  
     train_data, test_data = data_cacher(path, args)
