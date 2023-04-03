@@ -168,7 +168,7 @@ def main(args):
     holistic_scene_model_path = '/content/model_0068.pth'
     
     # EGO encoder model
-    ego_model_path = '/content/model_0012.pth'
+    ego_model_path = '/content/model_0009.pth'
     
     # Data load
     train_loader, validation_loader, preprocess = make_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, args)
