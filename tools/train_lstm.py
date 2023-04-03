@@ -188,7 +188,7 @@ def main(args):
         weight_decay=0.0004
     )
     # TODO Criteria
-    criteria = nn.MSELoss()
+    criteria = RMSLELoss()
     start_epoch = 1
     # Save & Load model
     if args.loadmodel is not None:
@@ -205,7 +205,7 @@ def main(args):
         print('==> Manually resumed training from {}.'.format(args.resume))
 
     # Print format
-    print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
+    print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.6f}\t{}\t{:.6f}'
 
     # Train
     global_step = 0
