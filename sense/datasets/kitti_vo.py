@@ -5,15 +5,7 @@ import numpy as np
 from math import atan2, sqrt, asin, cos, pi
 from scipy.spatial.transform import Rotation
 
-def matrix_to_pose(pose):
-    # Convert array to 3x4 numpy array
-    matrix = np.array(pose)
-    matrix = matrix.reshape(3, 4)
-    
-    # Extract the translation vector and rotation matrix from the 3x4 matrix
-    translation = matrix[:3, 3]
-    rotation = matrix[:3, :3]
-
+def rotation_matrix_to_euler_angles(rotation):
     if rotation[2,0] != 1 and rotation[2,0] != -1:
         pitch = -asin(rotation[2,0])
         roll = atan2(rotation[2,1]/cos(pitch), rotation[2,2]/cos(pitch))
@@ -27,7 +19,44 @@ def matrix_to_pose(pose):
             pitch = -pi/2
             roll = -yaw + atan2(-rotation[0,1], -rotation[0,2])
 
-    return np.concatenate((translation, [roll, pitch, yaw]))
+    return np.array([yaw, pitch, roll])
+
+def matrix_to_pose(pose):
+    pose = np.array(pose)
+    # Convert array to 3x4 numpy array
+    # Convert the 3x3 rotation matrices to Euler angles
+    rotations = pose.reshape((3, 4))
+    angles = rotation_matrix_to_euler_angles(rotations[:, :3])
+
+    # Combine the translation and Euler angles to form a 6-dimensional pose vector
+    poses_6d = np.concatenate([rotations[:, -1], angles])
+
+    return poses_6d
+
+def load_pose_file(path):
+    # Load the poses file
+    with open(path, 'r') as f:
+        poses = f.readlines()
+
+    # Extract the relative pose transformations between consecutive frames
+    relative_poses = []
+    for i in range(len(poses) - 1):
+        pose1 = np.array(poses[i].strip().split()).astype(np.float32).reshape(3, 4)
+        pose1 = np.vstack([pose1, [0, 0, 0, 1]])  # Append a row to make pose1 a 4x4 matrix
+        pose2 = np.array(poses[i+1].strip().split()).astype(np.float32).reshape(3, 4)
+        pose2 = np.vstack([pose2, [0, 0, 0, 1]])  # Append a row to make pose2 a 4x4 matrix
+        relative_pose = np.linalg.inv(pose1) @ pose2
+        relative_poses.append(relative_pose)
+
+    # Convert the relative pose transformations to the 6-dimensional pose format
+    poses_6d = []
+    for i in range(len(relative_poses)):
+        rotation = rotation_matrix_to_euler_angles(relative_poses[i][:3, :3])
+        translation = relative_poses[i][:3, 3]
+        pose_6d = np.concatenate([translation, rotation.ravel()])
+        poses_6d.append(pose_6d)
+    return poses_6d
+
 
 def load_pose(path):
     poses = {}
@@ -76,6 +105,7 @@ def kitti_vo_data_helper(path, train_sequences, val_sequences):
     base_dir = os.path.join(path, "kitti_vo", "dataset").replace("\\","/")
     pose_list = load_pose(os.path.join(base_dir, "poses").replace("\\","/"))
     for i in range(len(pose_list.keys())):
+        poses = load_pose_file(os.path.join(base_dir, "poses", f"{i:02}.txt").replace("\\","/"))
         # calib = load_calib(os.path.join(base_dir, "sequences", f"{i:02}"))
         left_img_list = os.listdir(os.path.join(base_dir, "sequences", f"{i:02}", "image_2").replace("\\","/"))
         left_img_list.sort()
@@ -83,13 +113,15 @@ def kitti_vo_data_helper(path, train_sequences, val_sequences):
         # right_img_list.sort()
         for j in range(len(left_img_list) - 5):
             sequence = []
+            pose = np.zeros(6)
             for k in range(5):
                 cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k]).replace("\\","/")
                 # cur_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k])
                 nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + k + 1]).replace("\\","/")
                 # nxt_right = os.path.join(path, "dataset", "sequences", f"{i:02}", "image_3", right_img_list[j + k + 1])
                 sequence.append([cur_left, nxt_left])
-            sequence.append(calc_pose_diff(pose_list.get(f"{i:02}")[j], pose_list.get(f"{i:02}")[j + 4]))
+                pose += poses[j + k]
+            sequence.append(pose)
             # sequence.append(calib)
             if i in train_sequences:
                 kitti_vo_train.append(sequence)  
