@@ -188,7 +188,7 @@ def main(args):
         weight_decay=0.0004
     )
     # TODO Criteria
-    criteria = RMSLELoss()
+    criteria = nn.MSELoss()
     start_epoch = 1
     # Save & Load model
     if args.loadmodel is not None:
