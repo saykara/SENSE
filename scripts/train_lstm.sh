@@ -8,7 +8,7 @@ LOAD_DIR=/content/model_0040.pth
 
 python tools/train_lstm.py pre-train \
    --dataset kitti_vo \
-   --enc-arch psmnext \
+   --enc-arch psm \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
