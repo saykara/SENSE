@@ -2,7 +2,7 @@
 
 export PYTHONPATH=./
 
-RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/new
+RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/next
 BASE_DIR=/content/dataset
 LOAD_DIR=/content/model_0040.pth
 
