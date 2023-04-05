@@ -377,7 +377,7 @@ def make_flow_disp_data(base_dir, dataset_name, flow_thresh=500, disp_thresh=500
 	elif dataset_name == 'kitti2012+kitti2015':
 		kitti2012_dir = os.path.join(base_dir, 'KITTI_Stereo_2012').replace("\\","/")
 		train_data, test_data = kitti2012.make_flow_disp_dataset(kitti2012_dir, pseudo_gt_dir=pseudo_gt_dir)
-		kitti2015_dir = KITTI2015_DIR
+		kitti2015_dir = os.path.join(base_dir, 'KITTI_scene_flow').replace("\\","/")
 		tmp_train_data, tmp_test_data = kitti2015.make_custom_flow_disp_dataset(kitti2015_dir, pseudo_gt_dir=pseudo_gt_dir)
 		train_data.extend(tmp_train_data)
 		test_data.extend(tmp_test_data)

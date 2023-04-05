@@ -162,4 +162,8 @@ def parse_args():
 	
 	parser.add_argument('--flow-model', default=None, type=str,
 						help='directory of flow model')
+ 
+	parser.add_argument('--test-stage', choices=['stage1', 'stage2', 'stage3'],
+						help='test stage decision.')
+ 
 	return parser

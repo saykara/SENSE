@@ -159,15 +159,17 @@ def _make_test_flow_disp_data(im_paths, fl_paths, fl_occ_paths, dp_paths, dp_occ
     flow_occ_dir, _ = os.path.split(fl_occ_paths[0])
     for idx in range(len(im_paths) - 1):
         cur_im_fn = im_paths[idx]
+        cur_im_fn = cur_im_fn.replace("\\","/")
         nxt_im_fn = im_paths[idx+1]
-        dp_fn = dp_paths[idx]
-        dp_occ_fn = '' if dp_occ_paths is None else dp_occ_paths[idx]
+        nxt_im_fn = nxt_im_fn.replace("\\","/")
+        dp_fn = dp_paths[idx].replace("\\","/")
+        dp_occ_fn = '' if dp_occ_paths is None else dp_occ_paths[idx].replace("\\","/")
         _, base_name = os.path.split(cur_im_fn)
         if cur_im_fn.find('image_clean') >= 0:
-            flow_fn = os.path.join(flow_dir, base_name[:-4] + '.flo')
+            flow_fn = os.path.join(flow_dir, base_name[:-4] + '.flo').replace("\\","/")
         else:
-            flow_fn = os.path.join(flow_dir, base_name[:-4] + '.pfm')
-        flow_occ_fn = os.path.join(flow_occ_dir, base_name)
+            flow_fn = os.path.join(flow_dir, base_name[:-4] + '.pfm').replace("\\","/")
+        flow_occ_fn = os.path.join(flow_occ_dir, base_name).replace("\\","/")
         if os.path.exists(flow_fn):
             assert os.path.exists(dp_fn), dp_fn
             assert os.path.exists(cur_im_fn), cur_im_fn
@@ -187,11 +189,11 @@ def _make_test_flow_disp_data(im_paths, fl_paths, fl_occ_paths, dp_paths, dp_occ
 def make_flow_disp_data_simple_merge(base_dir, split):
     input_paths = []        # (cur, nxt, left, right)
     target_paths = []       # (flow, disp)
-    img_dir = os.path.join(base_dir, split, 'image_clean')
-    flow_dir = os.path.join(base_dir, split, 'flow')
-    flow_occ_dir = os.path.join(base_dir, split, 'flow_occlusions')
-    disp_dir = os.path.join(base_dir, split, 'disparity')
-    disp_occ_dir = os.path.join(base_dir, split, 'disparity_occlusions')
+    img_dir = os.path.join(base_dir, split, 'image_clean').replace("\\","/")
+    flow_dir = os.path.join(base_dir, split, 'flow').replace("\\","/")
+    flow_occ_dir = os.path.join(base_dir, split, 'flow_occlusions').replace("\\","/")
+    disp_dir = os.path.join(base_dir, split, 'disparity').replace("\\","/")
+    disp_occ_dir = os.path.join(base_dir, split, 'disparity_occlusions').replace("\\","/")
     for lr in ['left', 'right']:
         for fb in ['into_future', 'into_past']:
             im_paths = sorted(glob.glob(os.path.join(img_dir, lr, '*.png')))

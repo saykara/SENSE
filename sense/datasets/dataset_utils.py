@@ -282,7 +282,7 @@ def read_kitti_flow(flow_path):
 
 def kitti_flow_loader(root, im_paths, target_paths):
     flow_path, flow_occ_path = target_paths
-    flow = read_kitti_flow(flow_path)
+    flow = read_kitti_flow(flow_path.replace("\\","/"))
     flow = np.ascontiguousarray(flow, dtype=np.float32)
     if flow_occ_path is None:
         flow_occ = -np.ones(flow.shape[:2])

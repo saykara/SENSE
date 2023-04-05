@@ -79,7 +79,7 @@ def make_data_loader(args):
 	])
 
 	train_data, _ = dataset_catlog.make_flow_disp_data(args.base_dir, args.dataset)
-	flow_test_data, _ = dataset_catlog.make_flow_data(args.base_dir, 'sintel')
+	_, flow_test_data = dataset_catlog.make_flow_data(args.base_dir, 'flyingthings3d')
 	_, disp_test_data = dataset_catlog.make_disp_data(args.base_dir, 'sceneflow')
 
 	# train_data = train_data[:200]
@@ -445,25 +445,25 @@ def main(args):
 		total_seg_acc = 0
 		lr = adjust_learning_rate(optimizer, epoch, len(train_loader))
 			 
-		## training ##
-		start_time = time.time()
+		### training ##
+		#start_time = time.time()
 		epoch_time = datetime.datetime.now() 
-		for batch_idx, batch_data in enumerate(train_loader):
-			end = time.time()
-			train_res = train(model, optimizer, batch_data, criteria, args)
-			loss, flow_loss, flow_occ_loss, disp_loss, disp_occ_loss = train_res
-			global_step += 1
-			if (batch_idx + 1) % args.print_freq == 0:
-				print(train_print_format.format(
-					'Train', global_step, epoch, batch_idx, len(train_loader),
-					loss, 
-					flow_loss, flow_occ_loss, 
-					disp_loss, disp_occ_loss,
-					end - start_time, time.time() - start_time, lr
-				))
-				sys.stdout.flush()
-			start_time = time.time()
-			total_train_loss += loss
+		#for batch_idx, batch_data in enumerate(train_loader):
+		#	end = time.time()
+		#	train_res = train(model, optimizer, batch_data, criteria, args)
+		#	loss, flow_loss, flow_occ_loss, disp_loss, disp_occ_loss = train_res
+		#	global_step += 1
+		#	if (batch_idx + 1) % args.print_freq == 0:
+		#		print(train_print_format.format(
+		#			'Train', global_step, epoch, batch_idx, len(train_loader),
+		#			loss, 
+		#			flow_loss, flow_occ_loss, 
+		#			disp_loss, disp_occ_loss,
+		#			end - start_time, time.time() - start_time, lr
+		#		))
+		#		sys.stdout.flush()
+		#	start_time = time.time()
+		#	total_train_loss += loss
 
 		# should have used the validation set to select the best model
 		start_time = time.time()
@@ -509,7 +509,7 @@ def main(args):
 			time.time() - start_time, lr
 		))
 		
-		save_checkpoint(model, optimizer, epoch, global_step, args)
+		#save_checkpoint(model, optimizer, epoch, global_step, args)
 		print(f'Elapsed epoch time = {datetime.datetime.now() - epoch_time}')
 	print(f'Elapsed time = {datetime.datetime.now() - start_full_time}')
 
