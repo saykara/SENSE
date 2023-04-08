@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import threading
 import torch.nn as nn 
+import time
 
 from sense.models.ego_autoencoder import EGOAutoEncoder
 from sense.lib.nn import DataParallelWithCallback
@@ -34,7 +35,7 @@ def min_max_eva(item):
         print("Eva max: ",e_ma)
 
 class PreprocessingCollateFn(object):
-    def __init__(self, optical_flow_model_path, encoder_path, flow_transform, final_transform, args):
+    def __init__(self, optical_flow_model_path, encoder_path, flow_transform, final_transform, seq_l, args):
         self.flow_transform = flow_transform
         self.final_transform = final_transform
         
@@ -56,6 +57,10 @@ class PreprocessingCollateFn(object):
 
         self.maxpool = nn.MaxPool2d(2)
         
+        self.of_time = 0
+        self.enc_time = 0
+        self.seq_l = seq_l
+        
     def __call__(self, x):
         batch, pose = x
         batch, pose = batch.to("cuda"), pose.to("cuda")
@@ -66,9 +71,13 @@ class PreprocessingCollateFn(object):
                 # Reshape the tensor to the desired shape
                 output_tensor1 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, :3, :, :]
                 output_tensor2 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, 3:, :, :]
+                s_time = time.time()
                 flow = self.optical_flow_model(output_tensor1, output_tensor2)
+                self.of_time += s_time
                 flow = self.transform_flow(flow)
+                s_time = time.time()
                 flow = self.encoder(flow)
+                self.enc_time += s_time
                 flow = self.transform_final(flow)
                 flow = self.maxpool(flow)
                 flows.append(flow)
@@ -79,6 +88,17 @@ class PreprocessingCollateFn(object):
 
     def transform_final(self, flow):
         return self.final_transform(flow[4])
+    
+    def print_time(self):
+        print(f'Total elapsed time = {self.of_time}')
+        print(f'Total elapsed in ms = {self.of_time * 1000}')
+        print(f'Average elapsed time = {self.of_time / self.seq_l}')
+        print(f'Average elapsed in ms = {(self.of_time * 1000) / self.seq_l}')
+        
+        print(f'Total elapsed time = {self.enc_time}')
+        print(f'Total elapsed in ms = {self.enc_time * 1000}')
+        print(f'Average elapsed time = {self.enc_time / self.seq_l}')
+        print(f'Average elapsed in ms = {(self.enc_time * 1000) / self.seq_l}')
     
 class VODataset(data.Dataset):
     def __init__(self, data, input_transform, seq_len = 5):

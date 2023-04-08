@@ -291,7 +291,7 @@ def stage2(args):
 ###############
 ### STAGE 3 ###
 ###############
-def stage3_data_loader(path, of_model, enc, args):
+def stage3_data_loader(path, of_model, enc, seq_l, args):
     height_new = 384
     width_new = 1280
     input_transform = transforms.Compose([
@@ -308,9 +308,9 @@ def stage3_data_loader(path, of_model, enc, args):
     test_data = test_helper(3, args)
     print("Test data sequence size: ", len(test_data))
     
-    test_set = visual_odometry_dataset.VODataset(test_data, input_transform, 100)
+    test_set = visual_odometry_dataset.VODataset(test_data, input_transform, seq_l)
     
-    collate_fn = visual_odometry_dataset.PreprocessingCollateFn(of_model, enc, flow_transform, final_transform, args)
+    collate_fn = visual_odometry_dataset.PreprocessingCollateFn(of_model, enc, flow_transform, final_transform, seq_l, args)
     
     return torch.utils.data.DataLoader(
             test_set,
@@ -335,13 +335,17 @@ def test_stage3(prediction, true):
 
 def stage3(args):
     # Flow producer model (PSMNexT)
-    holistic_scene_model_path = "E:/Thesis/Models/SENSE/model_0068.pth"
+    holistic_scene_model_path = "/content/dataset/models/SENSE/model_0068.pth"
     
     # EGO encoder model
-    ego_model_path = "E:/Thesis/Models/Autoencoder/old/model_0009.pth"
+    ego_model_path = "/content/dataset/models/encoder/old/model_0009.pth"
     
+    seq_l = 100
+     
     # Data load
-    test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, args)
+    test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, seq_l, args)
+    
+   
     
     # Make model
     model = EgoRnn(30720)
@@ -349,7 +353,7 @@ def stage3(args):
     model.eval()
     
     if args.loadmodel is not None:
-        ckpt = torch.load("E:/Thesis/Models/LSTM/old/model_0006.pth")
+        ckpt = torch.load("/content/dataset/models/lstm/old/model_0035.pth")
         state_dict = ckpt['state_dict']
         model.load_state_dict(state_dict)
         print(f'==> {args.enc_arch} pose model has been loaded.')
@@ -360,17 +364,25 @@ def stage3(args):
     test_start = datetime.now()
     total_pos_err = 0.
     total_rot_err = 0.
+    total_time = 0
     for batch_idx, batch_data in enumerate(test_loader):
         batch_data = preprocess(batch_data)
         input, targets = batch_data
         with torch.no_grad():
+            s_time = time.time()
             pose = model(input)
+            total_time += (time.time() - s_time)
             pos_err, rot_err = test_stage3(pose, targets)
         total_pos_err += pos_err
         total_rot_err += rot_err
     print(print_format.format(
         'Val', len(test_loader), total_pos_err /  len(test_loader), 
         total_rot_err / len(test_loader), str(datetime.now() - test_start)))
+    print(f'Test size = {seq_l}')
+    print(f'LSTM elapsed time = {total_time}')
+    print(f'LSTM elapsed in ms = {total_time * 1000}')
+    print(f'Average LSTM time = {total_time / seq_l}')
+    print(f'Average LSTM in ms = {(total_time * 1000) / seq_l}')
         
 
 if __name__ == '__main__':
