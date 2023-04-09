@@ -393,7 +393,7 @@ def stage3(args, begin, seq_l):
     # Make model
     model = EgoRnn(30720)
 
-    ckpt = torch.load("/content/dataset/models/lstm/next/model_0030.pth")
+    ckpt = torch.load("/content/dataset/models/lstm/next/model_0035.pth")
     state_dict = ckpt['state_dict']
     model.load_state_dict(state_dict)
     print(f'==> {args.enc_arch} pose model has been loaded.')
