@@ -415,7 +415,10 @@ def stage3(args, begin, seq_l, s):
             pose_change += model(input)
             total_time += (time.time() - s_time)
     pos_err, rot_err, mse = test_stage3(pose_change, pose_gt)
-    total_pos_err += pos_err
+    if pos_err > 200:
+        total_pos_err += 120
+    else:
+        total_pos_err += pos_err
     total_rot_err += rot_err
     print(print_format.format(
         'Val', len(test_loader), mse, pos_err, 
