@@ -30,7 +30,7 @@ from sense.datasets.flyingthings3d import make_flow_disp_data_simple_merge
 from train_ego_autoencoder import make_flow_data_helper
 
 
-def test_helper(stage, args, seq_l):
+def test_helper(stage, args, seq):
     test_list = []
     if stage == 1:
         inputs, targets = make_flow_disp_data_simple_merge(args.base_dir, "val")
@@ -45,7 +45,7 @@ def test_helper(stage, args, seq_l):
     elif stage == 3:
         test_sequences = [7]
         # 1, 7 will be test
-        test_list = kitti_vo_test_data_helper(args.base_dir, test_sequences, seq_l)
+        test_list = kitti_vo_test_data_helper(args.base_dir, test_sequences, seq[0], seq[1])
     return test_list
 
 ####### STAGE 1 #######
@@ -293,7 +293,7 @@ test_helper
 ###############
 ### STAGE 3 ###
 ###############
-def stage3_data_loader(path, of_model, enc, seq_l, args):
+def stage3_data_loader(path, of_model, enc, begin, seq_l, args):
     height_new = 384
     width_new = 1280
     input_transform = transforms.Compose([
@@ -307,7 +307,7 @@ def stage3_data_loader(path, of_model, enc, seq_l, args):
     final_transform = torchvision.transforms.Compose([
         flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
     ])
-    test_data = test_helper(3, args, seq_l)
+    test_data = test_helper(3, args, (begin, seq_l))
     print("Test data sequence size: ", len(test_data[0]))
     
     test_set = visual_odometry_dataset.VODataset(test_data, input_transform, seq_l)
@@ -326,8 +326,10 @@ def stage3_data_loader(path, of_model, enc, seq_l, args):
 def test_stage3(prediction, true):
     prediction = prediction.cpu().numpy().squeeze()
     true = true.cpu().numpy().squeeze()
+    
     print(prediction)
     print(true)
+    print(np.linalg.norm(true[:3]))
     print("---")
     # Positional Error
     position_err = np.linalg.norm(true[:3] - prediction[:3])
@@ -372,7 +374,7 @@ def test_stage3(prediction, true):
     rotation_err = rotation_error(gt_R, pred_R)
     return position_err, rotation_err.item(), mse
 
-def stage3(args, seq_l):
+def stage3(args, begin, seq_l):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -386,7 +388,7 @@ def stage3(args, seq_l):
     
      
     # Data load
-    test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, seq_l, args)
+    test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, begin, seq_l, args)
     
     # Make model
     model = EgoRnn(30720)
@@ -412,12 +414,12 @@ def stage3(args, seq_l):
         with torch.no_grad():
             input = input.cuda()
             s_time = time.time()
-            pose_change = model(input)
+            pose_change += model(input)
             total_time += (time.time() - s_time)
-    #pos_err, rot_err, mse = test_stage3(pose_change, pose_gt)
-    #print(print_format.format(
-    #    'Val', len(test_loader), mse, pos_err, 
-    #    rot_err, str(datetime.now() - test_start)))
+    pos_err, rot_err, mse = test_stage3(pose_change, pose_gt)
+    print(print_format.format(
+        'Val', len(test_loader), mse, pos_err, 
+        rot_err, str(datetime.now() - test_start)))
     print(f'Test size = {seq_l}')
     print(f'LSTM elapsed time = {total_time}')
     print(f'LSTM elapsed in ms = {total_time * 1000}')
@@ -436,7 +438,7 @@ if __name__ == '__main__':
     elif args.test_stage == "stage2":
         stage2(args)
     elif args.test_stage == "stage3":
-        stage3(args, 1000)
+        stage3(args, 0, 80)
     else:
         raise Exception
     

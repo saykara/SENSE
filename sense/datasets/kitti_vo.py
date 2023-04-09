@@ -130,7 +130,7 @@ def kitti_vo_data_helper(path, train_sequences, val_sequences):
                     kitti_vo_test.append(sequence)
     return kitti_vo_train, kitti_vo_test
 
-def kitti_vo_test_data_helper(path, train_sequences, r):
+def kitti_vo_test_data_helper(path, train_sequences, b, r):
     kitti_vo_test = []
     
     base_dir = os.path.join(path, "kitti_vo", "dataset").replace("\\","/")
@@ -141,7 +141,7 @@ def kitti_vo_test_data_helper(path, train_sequences, r):
         left_img_list = os.listdir(os.path.join(base_dir, "sequences", f"{i:02}", "image_2").replace("\\","/"))
         left_img_list.sort()
         sequence = []
-        for j in range(r):
+        for j in range(b, r):
             cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j]).replace("\\","/")
             nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + 1]).replace("\\","/")
             sequence.append([cur_left, nxt_left])

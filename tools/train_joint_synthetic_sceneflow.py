@@ -33,6 +33,9 @@ from sense.datasets.flow_disp_listdataset import FlowDispListDataset
 from sense.datasets.dataset_utils import *
 from sense.utils.arguments import parse_args
 
+
+el_time = 0
+
 def make_data_loader(args):
 	input_transform = transforms.Compose([
 		flow_transforms.RandomGammaImg((0.7,1.5)),
@@ -447,23 +450,23 @@ def main(args):
 			 
 		### training ##
 		#start_time = time.time()
-		epoch_time = datetime.datetime.now() 
-		#for batch_idx, batch_data in enumerate(train_loader):
-		#	end = time.time()
-		#	train_res = train(model, optimizer, batch_data, criteria, args)
-		#	loss, flow_loss, flow_occ_loss, disp_loss, disp_occ_loss = train_res
-		#	global_step += 1
-		#	if (batch_idx + 1) % args.print_freq == 0:
-		#		print(train_print_format.format(
-		#			'Train', global_step, epoch, batch_idx, len(train_loader),
-		#			loss, 
-		#			flow_loss, flow_occ_loss, 
-		#			disp_loss, disp_occ_loss,
-		#			end - start_time, time.time() - start_time, lr
-		#		))
-		#		sys.stdout.flush()
-		#	start_time = time.time()
-		#	total_train_loss += loss
+		epoch_time = 0
+		for batch_idx, batch_data in enumerate(train_loader):
+			end = time.time()
+			train_res = train(model, optimizer, batch_data, criteria, args)
+			loss, flow_loss, flow_occ_loss, disp_loss, disp_occ_loss = train_res
+			global_step += 1
+			if (batch_idx + 1) % args.print_freq == 0:
+				print(train_print_format.format(
+					'Train', global_step, epoch, batch_idx, len(train_loader),
+					loss, 
+					flow_loss, flow_occ_loss, 
+					disp_loss, disp_occ_loss,
+					end - start_time, time.time() - start_time, lr
+				))
+				sys.stdout.flush()
+			start_time = time.time()
+			total_train_loss += loss
 
 		# should have used the validation set to select the best model
 		start_time = time.time()
@@ -513,6 +516,115 @@ def main(args):
 		print(f'Elapsed epoch time = {datetime.datetime.now() - epoch_time}')
 	print(f'Elapsed time = {datetime.datetime.now() - start_full_time}')
 
+
+def test_time(args):
+	total_time = 0
+	train_loader, flow_test_loader, disp_test_loader = make_data_loader(args)
+
+	torch.manual_seed(args.seed)
+	torch.cuda.manual_seed(args.seed)
+	np.random.seed(args.seed)
+	random.seed(args.seed)
+
+	model = model_utils.make_model(
+		args, 
+		do_flow=not args.no_flow,
+		do_disp=not args.no_disp,
+		do_seg=(args.do_seg or args.do_seg_distill)
+	)
+	print('Number of model parameters: {}'.format(
+		sum([p.data.nelement() for p in model.parameters()]))
+	)
+
+	optimizer = optim.AdamW(model.parameters(), 
+		lr=args.lr, 
+		betas=(0.9, 0.999),
+		eps=1e-08, 
+		weight_decay=0.0004
+	)
+
+	if args.loadmodel is not None:
+		ckpt = torch.load(args.loadmodel)
+		state_dict = ckpt['state_dict']
+		model.load_state_dict(model_utils.patch_model_state_dict(state_dict))
+		print('==> A pre-trained checkpoint has been loaded.')
+
+	if args.auto_resume:
+		# search for the latest saved checkpoint
+		epoch_found = -1
+		for epoch in range(args.epochs+1, 1, -1):
+			ckpt_dir = model_utils.make_joint_checkpoint_name(args, epoch)
+			ckpt_dir = os.path.join(args.savemodel, ckpt_dir)
+			ckpt_path = os.path.join(ckpt_dir, 'model_{:04d}.pth'.format(epoch))
+			if os.path.exists(ckpt_path):
+				epoch_found = epoch
+				break
+		if epoch_found > 0:
+			ckpt = torch.load(ckpt_path)
+			assert ckpt['epoch'] == epoch_found, [ckpt['epoch'], epoch_found]
+			start_epoch = ckpt['epoch'] + 1
+			optimizer.load_state_dict(ckpt['optimizer'])
+			model.load_state_dict(ckpt['state_dict'])
+			print('==> Automatically resumed training from {}.'.format(ckpt_path))
+	else:
+		if args.resume is not None:
+			ckpt = torch.load(args.resume)
+			start_epoch = ckpt['epoch'] + 1
+			optimizer.load_state_dict(ckpt['optimizer'])
+			model.load_state_dict(ckpt['state_dict'])
+			print('==> Manually resumed training from {}.'.format(args.resume))
+	
+	cudnn.benchmark = True
+
+	(flow_crit, flow_occ_crit), flow_down_scales, flow_weights = model_utils.make_flow_criteria(args)
+	(disp_crit, disp_occ_crit), disp_down_scales, disp_weights = model_utils.make_disp_criteria(args)
+
+	hard_seg_crit = None
+	soft_seg_crit = None
+	self_supervised_crit = None
+	criteria = (
+		disp_crit, disp_occ_crit, 
+		flow_crit, flow_occ_crit
+	)
+
+	min_loss=100000000000000000
+	min_epo=0
+	min_err_pct = 10000
+	start_full_time = datetime.datetime.now()
+
+	train_print_format = '{}\t{:d}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{:.3f}\t{:.3f}'\
+		'\t{:.3f}\t{:.3f}\t{:.3f}\t{:.3f}\t{:.6f}'
+	test_print_format = '{}\t{:d}\t{:d}\t{:.3f}\t{:.2f}\t{:.3f}\t{:.2f}\t{:.2f}\t{:.2f}'\
+		'\t{:.3f}\t{:.3f}\t{:.3f}\t{:.3f}\t{:.6f}'
+
+	total_time = 0
+	for batch_idx, batch_data in enumerate(train_loader):
+		model.eval()
+		
+		cur_im, nxt_im = batch_data[0] 
+		flow, flow_occ = batch_data[1]
+		left_im, right_im = batch_data[2]
+		disp, disp_occ, _ = batch_data[3]
+		left_im, right_im = left_im.cuda(), right_im.cuda()
+		disp_gt, disp_occ = disp.cuda(), disp_occ.long().cuda()
+		cur_im, nxt_im = cur_im.cuda(), nxt_im.cuda()
+		flow_gt, flow_occ = flow.cuda(), flow_occ.long().cuda()
+		with torch.no_grad():
+			start = time.time()
+			flow_pred, disp_pred, _ = model(
+				cur_im, nxt_im, 
+				left_im, right_im, 
+				reuse_first_im=False
+			)
+			total_time += (time.time() - start)
+	print(f'Test size = {len(train_loader)}')
+	print(f'Total elapsed time = {total_time}')
+	print(f'Total elapsed in ms = {total_time * 1000}')
+	print(f'Average elapsed time = {total_time / len(train_loader)}')
+	print(f'Average elapsed in ms = {(total_time * 1000) / len(train_loader)}')
+ 
+ 
+ 
 if __name__ == '__main__':
 	parser = parse_args()
 	args = parser.parse_args()
@@ -529,11 +641,11 @@ if __name__ == '__main__':
 	# we don't need self-supervised loss on fully annotated data
 	args.do_ss_loss = False
 
-	print('Use following parameters:')
-	for k, v in vars(args).items():
-		print('{}\t{}'.format(k, v))
-	print('=======================================\n')
-
-	if not os.path.exists(args.savemodel):
-		os.makedirs(args.savemodel)
-	main(args)
+	# print('Use following parameters:')
+	# for k, v in vars(args).items():
+	# 	print('{}\t{}'.format(k, v))
+	# print('=======================================\n')
+# 
+	# if not os.path.exists(args.savemodel):
+	# 	os.makedirs(args.savemodel)
+	test_time(args)
