@@ -49,7 +49,7 @@ class PreprocessingCollateFn(object):
         self.encoder.to(device)
         self.encoder.eval()
         
-        self.optical_flow_model = DataParallelWithCallback(SceneNeXt(args)).cuda()
+        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
         self.optical_flow_model.to(device)
@@ -68,7 +68,7 @@ class PreprocessingCollateFn(object):
         
         with torch.no_grad():
             for item in batch:
-                item = item.unsqueeze(0)
+                #item = item.unsqueeze(0)
                 new_dim = item.size(1) * item.size(2)
                 # Reshape the tensor to the desired shape
                 output_tensor1 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, :3, :, :]
@@ -77,7 +77,7 @@ class PreprocessingCollateFn(object):
                 flow = self.optical_flow_model(output_tensor1, output_tensor2)
                 self.of_time += (time.time() - s_time)
                 flow = self.transform_flow(flow)
-                flow = flow.unsqueeze(0)
+                #flow = flow.unsqueeze(0)
                 s_time = time.time()
                 flow = self.encoder(flow)
                 self.enc_time += (time.time() - s_time)
@@ -116,16 +116,18 @@ class VODataset(data.Dataset):
 
     def __getitem__(self, index):
         seq = []
-        cur_l = self.image_loader(self.data[index][0][0])
-        nxt_l = self.image_loader(self.data[index][0][1])
-          
-        if self.input_transform:
-            cur_l = self.input_transform(cur_l)
-            nxt_l = self.input_transform(nxt_l)
+        for i in range(self.seq_len):
+            cur_l = self.image_loader(self.data[index][i][0])
+            nxt_l = self.image_loader(self.data[index][i][1])
             
-        pose = torch.tensor(self.data[index][1])
+            if self.input_transform:
+                cur_l = self.input_transform(cur_l)
+                nxt_l = self.input_transform(nxt_l)
+            
+            seq.append(torch.stack([cur_l, nxt_l]))
+        pose = torch.tensor(self.data[index][self.seq_len])
         pose = pose.to(torch.float32)
-        return torch.stack([cur_l, nxt_l]), pose
+        return torch.stack(seq), pose
     
     def read_poses(self, path):
         poses = []

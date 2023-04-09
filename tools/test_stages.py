@@ -24,7 +24,7 @@ from sense.datasets.ego_autoencoder_dataset import EGOAutoencoderImageDataset, P
 from sense.models.ego_rnn import EgoRnn 
 
 from sense.datasets.dataset_catlog import make_flow_disp_data
-from sense.datasets.kitti_vo import kitti_vo_test_data_helper
+from sense.datasets.kitti_vo import kitti_vo_test_data_helper, kitti_vo_data_helper
 from sense.datasets.test_dataset import Stage1TestDataset
 from sense.datasets.dataset_utils import optical_flow_loader, sceneflow_disp_loader
 from sense.datasets.flyingthings3d import make_flow_disp_data_simple_merge
@@ -51,6 +51,7 @@ def test_helper(stage, args, seq):
         test_sequences = [seq[2]]
         # 1, 7 will be test
         test_list = kitti_vo_test_data_helper(args.base_dir, test_sequences, seq[0], seq[1])
+        test_list, _ = kitti_vo_data_helper(args.base_dir, test_sequences, [])
     return test_list
 
 ####### STAGE 1 #######
@@ -294,7 +295,8 @@ def stage2(args):
     print(print_format.format(
         'Val', len(test_loader), mse_loss / len(test_loader),  epe_loss / len(test_loader), 
         ae_loss /  len(test_loader), str(datetime.now() - test_start)))
-test_helper
+
+
 ###############
 ### STAGE 3 ###
 ###############
@@ -313,7 +315,7 @@ def stage3_data_loader(path, of_model, enc, begin, seq_l, s, args):
         flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
     ])
     test_data = test_helper(3, args, (begin, seq_l, s))
-    print("Test data sequence size: ", len(test_data[0]))
+    print("Test data sequence size: ", len(test_data))
     
     test_set = visual_odometry_dataset.VODataset(test_data, input_transform, seq_l)
     
@@ -334,8 +336,8 @@ def test_stage3(prediction, true):
     
     # Positional Error
     pos_err = np.linalg.norm(true[:3] - prediction[:3])
-
-    pos_err_pct = (pos_err / np.linalg.norm(prediction[:3])) * 100
+    print(true[:3])
+    pos_err_pct = (np.linalg.norm(prediction[:3] - true[:3]) / np.linalg.norm(true[:3])) * 100
     mse =  np.mean((true[:3] - prediction[:3]) ** 2)
     # Rotational Error
     # define the order of rotations
@@ -387,10 +389,10 @@ def stage3(args, begin, seq_l, s):
     global error_pose
     global total_pos_err_pct
     # Flow producer model (PSMNexT)
-    holistic_scene_model_path = "/content/dataset/models/SENSENeXt/model_0068.pth"
+    holistic_scene_model_path = "/content/dataset/models/SENSE/model_0068.pth"
     
     # EGO encoder model
-    ego_model_path = "/content/dataset/models/encoder/next/model_0009.pth"
+    ego_model_path = "/content/dataset/models/encoder/old/model_0009.pth"
     
      
     # Data load
@@ -399,7 +401,7 @@ def stage3(args, begin, seq_l, s):
     # Make model
     model = EgoRnn(30720)
 
-    ckpt = torch.load("/content/dataset/models/lstm/next/model_0035.pth")
+    ckpt = torch.load("/content/dataset/models/lstm/old/model_0035.pth")
     state_dict = ckpt['state_dict']
     model.load_state_dict(state_dict)
     print(f'==> {args.enc_arch} pose model has been loaded.')
@@ -420,14 +422,14 @@ def stage3(args, begin, seq_l, s):
             input = input.cuda()
             pose_change = model(input)
             pos_err, pos_err_pct, rot_err = test_stage3(pose_change, pose_gt)
-            if pos_err > 50 or pos_err == math.nan:
+            if pos_err_pct > 1000 or pos_err == math.nan:
                 error_pose += 1
             else:
                 total_pos_err += pos_err
                 total_pos_err_pct += pos_err_pct
             total_rot_err += rot_err
     print(print_format.format(
-        'Val', len(test_loader), total_pos_err_pct, total_pos_err_pct, 
+        'Val', len(test_loader), total_pos_err, total_pos_err_pct, 
         total_rot_err, str(datetime.now() - test_start)))
     #print(f'Test size = {seq_l}')
     #print(f'LSTM elapsed time = {total_time}')
@@ -448,9 +450,9 @@ if __name__ == '__main__':
         stage2(args)
     elif args.test_stage == "stage3":
         seq_list = range(0, 1050, 75)
-        k = 2100
+        k = 2192
         for s in [1, 7]:
-            stage3(args, 0, 1050, s)
+            stage3(args, 0, 5, s)
         print_format = '{}\t{:d}\t{:.6f}\t{:.6f}\t{:.6f}'
         print(print_format.format(
         'Test', k, total_pos_err / (k - error_pose), total_pos_err_pct / (k - error_pose), total_rot_err / k))
