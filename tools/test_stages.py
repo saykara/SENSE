@@ -29,6 +29,8 @@ from sense.datasets.dataset_utils import optical_flow_loader, sceneflow_disp_loa
 from sense.datasets.flyingthings3d import make_flow_disp_data_simple_merge
 from train_ego_autoencoder import make_flow_data_helper
 
+total_pos_err = 0.
+total_rot_err = 0.
 
 def test_helper(stage, args, seq):
     test_list = []
@@ -43,7 +45,7 @@ def test_helper(stage, args, seq):
             test_list.append([i[0], i[1]])
             #   [cur_im_path, nxt_im_path}
     elif stage == 3:
-        test_sequences = [7]
+        test_sequences = [seq[2]]
         # 1, 7 will be test
         test_list = kitti_vo_test_data_helper(args.base_dir, test_sequences, seq[0], seq[1])
     return test_list
@@ -293,7 +295,7 @@ test_helper
 ###############
 ### STAGE 3 ###
 ###############
-def stage3_data_loader(path, of_model, enc, begin, seq_l, args):
+def stage3_data_loader(path, of_model, enc, begin, seq_l, s, args):
     height_new = 384
     width_new = 1280
     input_transform = transforms.Compose([
@@ -307,7 +309,7 @@ def stage3_data_loader(path, of_model, enc, begin, seq_l, args):
     final_transform = torchvision.transforms.Compose([
         flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
     ])
-    test_data = test_helper(3, args, (begin, seq_l))
+    test_data = test_helper(3, args, (begin, seq_l, s))
     print("Test data sequence size: ", len(test_data[0]))
     
     test_set = visual_odometry_dataset.VODataset(test_data, input_transform, seq_l)
@@ -327,10 +329,6 @@ def test_stage3(prediction, true):
     prediction = prediction.cpu().numpy().squeeze()
     true = true.cpu().numpy().squeeze()
     
-    print(prediction)
-    print(true)
-    print(np.linalg.norm(true[:3]))
-    print("---")
     # Positional Error
     position_err = np.linalg.norm(true[:3] - prediction[:3])
 
@@ -374,12 +372,14 @@ def test_stage3(prediction, true):
     rotation_err = rotation_error(gt_R, pred_R)
     return position_err, rotation_err.item(), mse
 
-def stage3(args, begin, seq_l):
+def stage3(args, begin, seq_l, s):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
 
+    global total_pos_err
+    global total_rot_err
     # Flow producer model (PSMNexT)
     holistic_scene_model_path = "/content/dataset/models/SENSENeXt/model_0068.pth"
     
@@ -388,7 +388,7 @@ def stage3(args, begin, seq_l):
     
      
     # Data load
-    test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, begin, seq_l, args)
+    test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, begin, seq_l, s, args)
     
     # Make model
     model = EgoRnn(30720)
@@ -404,8 +404,6 @@ def stage3(args, begin, seq_l):
     print_format = '{}\t{:d}\t{:.6f}\t{:.6f}\t{:.6f}\t{}'
     
     test_start = datetime.now()
-    total_pos_err = 0.
-    total_rot_err = 0.
     total_time = 0
     pose_change = torch.empty(1, 6).cuda()
     for batch_idx, batch_data in enumerate(test_loader):
@@ -417,15 +415,17 @@ def stage3(args, begin, seq_l):
             pose_change += model(input)
             total_time += (time.time() - s_time)
     pos_err, rot_err, mse = test_stage3(pose_change, pose_gt)
+    total_pos_err += pos_err
+    total_rot_err += rot_err
     print(print_format.format(
         'Val', len(test_loader), mse, pos_err, 
         rot_err, str(datetime.now() - test_start)))
-    print(f'Test size = {seq_l}')
-    print(f'LSTM elapsed time = {total_time}')
-    print(f'LSTM elapsed in ms = {total_time * 1000}')
-    print(f'Average LSTM time = {total_time / seq_l}')
-    print(f'Average LSTM in ms = {(total_time * 1000) / seq_l}')
-    preprocess.print_time()
+    #print(f'Test size = {seq_l}')
+    #print(f'LSTM elapsed time = {total_time}')
+    #print(f'LSTM elapsed in ms = {total_time * 1000}')
+    #print(f'Average LSTM time = {total_time / seq_l}')
+    #print(f'Average LSTM in ms = {(total_time * 1000) / seq_l}')
+    #preprocess.print_time()
         
 
 if __name__ == '__main__':
@@ -438,7 +438,17 @@ if __name__ == '__main__':
     elif args.test_stage == "stage2":
         stage2(args)
     elif args.test_stage == "stage3":
-        stage3(args, 0, 80)
+        total_pos_err
+        total_rot_err
+        seq_list = range(0, 1050, 75)
+        k = 0
+        for s in [1, 7]:
+            for i in seq_list:
+                stage3(args, i, 75, s)
+                k+=1
+        print_format = '{}\t{:d}\t{:.6f}\t{:.6f}'
+        print(print_format.format(
+        'Test', k, total_pos_err / k, total_rot_err / k))
     else:
         raise Exception
     
