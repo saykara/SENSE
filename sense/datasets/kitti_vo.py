@@ -145,9 +145,8 @@ def kitti_vo_test_data_helper(path, train_sequences, b, r):
             cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j]).replace("\\","/")
             nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + 1]).replace("\\","/")
             sequence.append([cur_left, nxt_left])
-            pose += poses[j]
-        kitti_vo_test.append(sequence)
-    return sequence, pose
+            sequence.append(poses[j])
+    return sequence
 
 def kitti_vo_flow_data_helper(path, train_sequences):
     kitti_vo_train = []

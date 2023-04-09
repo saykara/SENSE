@@ -106,8 +106,7 @@ class PreprocessingCollateFn(object):
 class VODataset(data.Dataset):
     def __init__(self, data, input_transform, seq_len = 5):
         super(VODataset, self).__init__()
-        self.data = data[0]
-        self.pose = data[1]
+        self.data = data
         self.image_loader = self.imread
         self.input_transform = input_transform
         self.seq_len = seq_len
@@ -117,14 +116,14 @@ class VODataset(data.Dataset):
 
     def __getitem__(self, index):
         seq = []
-        cur_l = self.image_loader(self.data[index][0])
-        nxt_l = self.image_loader(self.data[index][1])
+        cur_l = self.image_loader(self.data[index][0][0])
+        nxt_l = self.image_loader(self.data[index][0][1])
           
         if self.input_transform:
             cur_l = self.input_transform(cur_l)
             nxt_l = self.input_transform(nxt_l)
             
-        pose = torch.tensor(self.pose)
+        pose = torch.tensor(self.data[index][1])
         pose = pose.to(torch.float32)
         return torch.stack([cur_l, nxt_l]), pose
     

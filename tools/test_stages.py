@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 import time
 import random
+import math
 
 import torch.nn.functional as F
 from torchvision import transforms
@@ -31,6 +32,8 @@ from train_ego_autoencoder import make_flow_data_helper
 
 total_pos_err = 0.
 total_rot_err = 0.
+total_pos_err_pct = 0.
+error_pose = 0
 
 def test_helper(stage, args, seq):
     test_list = []
@@ -330,8 +333,9 @@ def test_stage3(prediction, true):
     true = true.cpu().numpy().squeeze()
     
     # Positional Error
-    position_err = np.linalg.norm(true[:3] - prediction[:3])
+    pos_err = np.linalg.norm(true[:3] - prediction[:3])
 
+    pos_err_pct = (pos_err / np.linalg.norm(prediction[:3])) * 100
     mse =  np.mean((true[:3] - prediction[:3]) ** 2)
     # Rotational Error
     # define the order of rotations
@@ -370,7 +374,7 @@ def test_stage3(prediction, true):
         return angle
 
     rotation_err = rotation_error(gt_R, pred_R)
-    return position_err, rotation_err.item(), mse
+    return pos_err, pos_err_pct, rotation_err.item()
 
 def stage3(args, begin, seq_l, s):
     torch.manual_seed(args.seed)
@@ -380,6 +384,8 @@ def stage3(args, begin, seq_l, s):
 
     global total_pos_err
     global total_rot_err
+    global error_pose
+    global total_pos_err_pct
     # Flow producer model (PSMNexT)
     holistic_scene_model_path = "/content/dataset/models/SENSENeXt/model_0068.pth"
     
@@ -406,23 +412,23 @@ def stage3(args, begin, seq_l, s):
     test_start = datetime.now()
     total_time = 0
     pose_change = torch.empty(1, 6).cuda()
+    
     for batch_idx, batch_data in enumerate(test_loader):
         batch_data = preprocess(batch_data)
         input, pose_gt = batch_data
         with torch.no_grad():
             input = input.cuda()
-            s_time = time.time()
-            pose_change += model(input)
-            total_time += (time.time() - s_time)
-    pos_err, rot_err, mse = test_stage3(pose_change, pose_gt)
-    if pos_err > 200:
-        total_pos_err += 120
-    else:
-        total_pos_err += pos_err
-    total_rot_err += rot_err
+            pose_change = model(input)
+            pos_err, pos_err_pct, rot_err = test_stage3(pose_change, pose_gt)
+            if pos_err > 50 or pos_err == math.nan:
+                error_pose += 1
+            else:
+                total_pos_err += pos_err
+                total_pos_err_pct += pos_err_pct
+            total_rot_err += rot_err
     print(print_format.format(
-        'Val', len(test_loader), mse, pos_err, 
-        rot_err, str(datetime.now() - test_start)))
+        'Val', len(test_loader), total_pos_err_pct, total_pos_err_pct, 
+        total_rot_err, str(datetime.now() - test_start)))
     #print(f'Test size = {seq_l}')
     #print(f'LSTM elapsed time = {total_time}')
     #print(f'LSTM elapsed in ms = {total_time * 1000}')
@@ -441,17 +447,13 @@ if __name__ == '__main__':
     elif args.test_stage == "stage2":
         stage2(args)
     elif args.test_stage == "stage3":
-        total_pos_err
-        total_rot_err
         seq_list = range(0, 1050, 75)
-        k = 0
+        k = 2100
         for s in [1, 7]:
-            for i in seq_list:
-                stage3(args, i, 75, s)
-                k+=1
-        print_format = '{}\t{:d}\t{:.6f}\t{:.6f}'
+            stage3(args, 0, 1050, s)
+        print_format = '{}\t{:d}\t{:.6f}\t{:.6f}\t{:.6f}'
         print(print_format.format(
-        'Test', k, total_pos_err / k, total_rot_err / k))
+        'Test', k, total_pos_err / (k - error_pose), total_pos_err_pct / (k - error_pose), total_rot_err / k))
     else:
         raise Exception
     
