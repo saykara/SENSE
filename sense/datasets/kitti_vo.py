@@ -136,6 +136,8 @@ def kitti_vo_test_data_helper(path, train_sequences, r):
     base_dir = os.path.join(path, "kitti_vo", "dataset").replace("\\","/")
     pose_list = load_pose(os.path.join(base_dir, "poses").replace("\\","/"))
     for i in train_sequences:
+        poses = load_pose_file(os.path.join(base_dir, "poses", f"{i:02}.txt").replace("\\","/"))
+        pose = np.zeros(6)
         left_img_list = os.listdir(os.path.join(base_dir, "sequences", f"{i:02}", "image_2").replace("\\","/"))
         left_img_list.sort()
         sequence = []
@@ -143,9 +145,9 @@ def kitti_vo_test_data_helper(path, train_sequences, r):
             cur_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j]).replace("\\","/")
             nxt_left = os.path.join(base_dir, "sequences", f"{i:02}", "image_2", left_img_list[j + 1]).replace("\\","/")
             sequence.append([cur_left, nxt_left])
-        sequence.append(calc_pose_diff(pose_list.get(f"{i:02}")[r - 1], pose_list.get(f"{i:02}")[0]))
+            pose += poses[j]
         kitti_vo_test.append(sequence)
-    return kitti_vo_test
+    return sequence, pose
 
 def kitti_vo_flow_data_helper(path, train_sequences):
     kitti_vo_train = []

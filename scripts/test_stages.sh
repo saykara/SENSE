@@ -3,12 +3,12 @@
 export PYTHONPATH=./
 
 RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/new
-BASE_DIR=E:/Thesis/content/dataset
+BASE_DIR=/content/dataset
 LOAD_DIR=/content/model_0040.pth
 
 python tools/test_stages.py pre-train \
    --dataset kitti2012+kitti2015 \
-   --enc-arch psm \
+   --enc-arch psmnext \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
@@ -34,4 +34,4 @@ python tools/test_stages.py pre-train \
    --kernel-size 7 \
    --test-stage stage3 \
    --upsample-flow-output \
-   --ego-enc a
+   --ego-enc next

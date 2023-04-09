@@ -8,6 +8,7 @@ import torch.nn as nn
 import numpy as np
 import cv2
 import time
+import random
 
 import torch.nn.functional as F
 from torchvision import transforms
@@ -28,7 +29,8 @@ from sense.datasets.dataset_utils import optical_flow_loader, sceneflow_disp_loa
 from sense.datasets.flyingthings3d import make_flow_disp_data_simple_merge
 from train_ego_autoencoder import make_flow_data_helper
 
-def test_helper(stage, args):
+
+def test_helper(stage, args, seq_l):
     test_list = []
     if stage == 1:
         inputs, targets = make_flow_disp_data_simple_merge(args.base_dir, "val")
@@ -41,14 +43,14 @@ def test_helper(stage, args):
             test_list.append([i[0], i[1]])
             #   [cur_im_path, nxt_im_path}
     elif stage == 3:
-        test_sequences = [1]
+        test_sequences = [7]
         # 1, 7 will be test
-        test_list = kitti_vo_test_data_helper(args.base_dir, test_sequences, 100)
+        test_list = kitti_vo_test_data_helper(args.base_dir, test_sequences, seq_l)
     return test_list
 
 ####### STAGE 1 #######
 def stage1_data_loader(args):
-    test_data = test_helper(1, args)
+    test_data = test_helper(1, args, None)
     tmp_test_data = []
     for i in range(len(test_data[0])):
         tmp_test_data.append([test_data[0][i], test_data[1][i]])
@@ -207,7 +209,7 @@ def stage1(args):
 
 ####### STAGE 2 #######
 def stage2_data_loader(model, args):
-    test_data = test_helper(2, args)
+    test_data = test_helper(2, args, None)
     
     transform = transforms.Compose([
         flow_transforms.ArrayToTensor(),
@@ -287,7 +289,7 @@ def stage2(args):
     print(print_format.format(
         'Val', len(test_loader), mse_loss / len(test_loader),  epe_loss / len(test_loader), 
         ae_loss /  len(test_loader), str(datetime.now() - test_start)))
-
+test_helper
 ###############
 ### STAGE 3 ###
 ###############
@@ -305,8 +307,8 @@ def stage3_data_loader(path, of_model, enc, seq_l, args):
     final_transform = torchvision.transforms.Compose([
         flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
     ])
-    test_data = test_helper(3, args)
-    print("Test data sequence size: ", len(test_data))
+    test_data = test_helper(3, args, seq_l)
+    print("Test data sequence size: ", len(test_data[0]))
     
     test_set = visual_odometry_dataset.VODataset(test_data, input_transform, seq_l)
     
@@ -315,86 +317,126 @@ def stage3_data_loader(path, of_model, enc, seq_l, args):
     return torch.utils.data.DataLoader(
             test_set,
             batch_size=1,
-            shuffle=True,
+            shuffle=False,
             num_workers=args.workers,
             drop_last=True,
             pin_memory=False,
         ), collate_fn
 
 def test_stage3(prediction, true):
+    prediction = prediction.cpu().numpy().squeeze()
+    true = true.cpu().numpy().squeeze()
+    print(prediction)
+    print(true)
+    print("---")
     # Positional Error
     position_err = np.linalg.norm(true[:3] - prediction[:3])
-    
-    # Rotational Error
-    trace = np.trace(np.dot(true[3:], prediction[3:].T))
-    cos_angle = (trace - 1.0) / 2.0
-    cos_angle = np.clip(cos_angle, -1.0, 1.0) # ensure value is within the valid range for arccos
-    angle_error = np.arccos(cos_angle)
-    rotation_err = np.degrees(angle_error)
-    return position_err, rotation_err
 
-def stage3(args):
+    mse =  np.mean((true[:3] - prediction[:3]) ** 2)
+    # Rotational Error
+    # define the order of rotations
+    order = "ZYX"
+
+    # compute the rotation matrices from the Euler angles
+    def euler_angles_to_matrix(euler_angles, order):
+        # compute the sin and cos values of the angles
+        s1 = torch.sin(euler_angles[0])
+        c1 = torch.cos(euler_angles[0])
+        s2 = torch.sin(euler_angles[1])
+        c2 = torch.cos(euler_angles[1])
+        s3 = torch.sin(euler_angles[2])
+        c3 = torch.cos(euler_angles[2])
+
+        # compute the rotation matrix
+        if order == "ZYX":
+            r = torch.tensor([[c1*c2, c1*s2*s3 - c3*s1, s1*s3 + c1*c3*s2],
+                              [c2*s1, c1*c3 + s1*s2*s3, c3*s1*s2 - c1*s3],
+                              [-s2,   c2*s3,            c2*c3           ]])
+        elif order == "XYZ":
+            r = torch.tensor([[c2*c3, -c2*s3, s2 ],
+                              [c1*s3 + c3*s1*s2, c1*c3 - s1*s2*s3, -c2*s1],
+                              [s1*s3 - c1*c3*s2, c3*s1 + c1*s2*s3, c1*c2]])
+        return r
+
+    gt_R = euler_angles_to_matrix(torch.from_numpy(true[3:]), order)
+    pred_R = euler_angles_to_matrix(torch.from_numpy(prediction[3:]), order)
+
+    # compute the rotational error
+    def rotation_error(R1, R2):
+        eps = 1e-8
+        trace = torch.sum(R1 * R2)
+        trace = torch.clamp(trace, -1.0 + eps, 3.0 - eps)
+        angle = torch.acos((trace - 1.0) / 2.0)
+        return angle
+
+    rotation_err = rotation_error(gt_R, pred_R)
+    return position_err, rotation_err.item(), mse
+
+def stage3(args, seq_l):
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+
     # Flow producer model (PSMNexT)
-    holistic_scene_model_path = "/content/dataset/models/SENSE/model_0068.pth"
+    holistic_scene_model_path = "/content/dataset/models/SENSENeXt/model_0068.pth"
     
     # EGO encoder model
-    ego_model_path = "/content/dataset/models/encoder/old/model_0009.pth"
+    ego_model_path = "/content/dataset/models/encoder/next/model_0009.pth"
     
-    seq_l = 100
      
     # Data load
     test_loader, preprocess = stage3_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, seq_l, args)
     
-   
-    
     # Make model
     model = EgoRnn(30720)
+
+    ckpt = torch.load("/content/dataset/models/lstm/next/model_0030.pth")
+    state_dict = ckpt['state_dict']
+    model.load_state_dict(state_dict)
+    print(f'==> {args.enc_arch} pose model has been loaded.')
     model = model.cuda()
     model.eval()
     
-    if args.loadmodel is not None:
-        ckpt = torch.load("/content/dataset/models/lstm/old/model_0035.pth")
-        state_dict = ckpt['state_dict']
-        model.load_state_dict(state_dict)
-        print(f'==> {args.enc_arch} pose model has been loaded.')
-    
     # Print format
-    print_format = '{}\t{:d}\t{:.6f}\t{:.6f}\t{}'
+    print_format = '{}\t{:d}\t{:.6f}\t{:.6f}\t{:.6f}\t{}'
     
     test_start = datetime.now()
     total_pos_err = 0.
     total_rot_err = 0.
     total_time = 0
+    pose_change = torch.empty(1, 6).cuda()
     for batch_idx, batch_data in enumerate(test_loader):
         batch_data = preprocess(batch_data)
-        input, targets = batch_data
+        input, pose_gt = batch_data
         with torch.no_grad():
+            input = input.cuda()
             s_time = time.time()
-            pose = model(input)
+            pose_change = model(input)
             total_time += (time.time() - s_time)
-            pos_err, rot_err = test_stage3(pose, targets)
-        total_pos_err += pos_err
-        total_rot_err += rot_err
-    print(print_format.format(
-        'Val', len(test_loader), total_pos_err /  len(test_loader), 
-        total_rot_err / len(test_loader), str(datetime.now() - test_start)))
+    #pos_err, rot_err, mse = test_stage3(pose_change, pose_gt)
+    #print(print_format.format(
+    #    'Val', len(test_loader), mse, pos_err, 
+    #    rot_err, str(datetime.now() - test_start)))
     print(f'Test size = {seq_l}')
     print(f'LSTM elapsed time = {total_time}')
     print(f'LSTM elapsed in ms = {total_time * 1000}')
     print(f'Average LSTM time = {total_time / seq_l}')
     print(f'Average LSTM in ms = {(total_time * 1000) / seq_l}')
+    preprocess.print_time()
         
 
 if __name__ == '__main__':
     parser = parse_args()
     args = parser.parse_args()
     args.stride = 32
+    
     if args.test_stage == "stage1":
         stage1(args)
     elif args.test_stage == "stage2":
         stage2(args)
     elif args.test_stage == "stage3":
-        stage3(args)
+        stage3(args, 1000)
     else:
         raise Exception
     

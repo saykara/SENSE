@@ -49,7 +49,7 @@ class PreprocessingCollateFn(object):
         self.encoder.to(device)
         self.encoder.eval()
         
-        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
+        self.optical_flow_model = DataParallelWithCallback(SceneNeXt(args)).cuda()
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
         self.optical_flow_model.to(device)
@@ -65,19 +65,22 @@ class PreprocessingCollateFn(object):
         batch, pose = x
         batch, pose = batch.to("cuda"), pose.to("cuda")
         flows = []
+        
         with torch.no_grad():
             for item in batch:
+                item = item.unsqueeze(0)
                 new_dim = item.size(1) * item.size(2)
                 # Reshape the tensor to the desired shape
                 output_tensor1 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, :3, :, :]
                 output_tensor2 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, 3:, :, :]
                 s_time = time.time()
                 flow = self.optical_flow_model(output_tensor1, output_tensor2)
-                self.of_time += s_time
+                self.of_time += (time.time() - s_time)
                 flow = self.transform_flow(flow)
+                flow = flow.unsqueeze(0)
                 s_time = time.time()
                 flow = self.encoder(flow)
-                self.enc_time += s_time
+                self.enc_time += (time.time() - s_time)
                 flow = self.transform_final(flow)
                 flow = self.maxpool(flow)
                 flows.append(flow)
@@ -90,20 +93,21 @@ class PreprocessingCollateFn(object):
         return self.final_transform(flow[4])
     
     def print_time(self):
-        print(f'Total elapsed time = {self.of_time}')
-        print(f'Total elapsed in ms = {self.of_time * 1000}')
-        print(f'Average elapsed time = {self.of_time / self.seq_l}')
-        print(f'Average elapsed in ms = {(self.of_time * 1000) / self.seq_l}')
+        print(f'Total OF time = {self.of_time}')
+        print(f'Total OF in ms = {self.of_time * 1000}')
+        print(f'Average OF time = {self.of_time / self.seq_l}')
+        print(f'Average OF in ms = {(self.of_time * 1000) / self.seq_l}')
         
-        print(f'Total elapsed time = {self.enc_time}')
-        print(f'Total elapsed in ms = {self.enc_time * 1000}')
-        print(f'Average elapsed time = {self.enc_time / self.seq_l}')
-        print(f'Average elapsed in ms = {(self.enc_time * 1000) / self.seq_l}')
+        print(f'Total ENC time = {self.enc_time}')
+        print(f'Total ENC in ms = {self.enc_time * 1000}')
+        print(f'Average ENC time = {self.enc_time / self.seq_l}')
+        print(f'Average ENC in ms = {(self.enc_time * 1000) / self.seq_l}')
     
 class VODataset(data.Dataset):
     def __init__(self, data, input_transform, seq_len = 5):
         super(VODataset, self).__init__()
-        self.data = data
+        self.data = data[0]
+        self.pose = data[1]
         self.image_loader = self.imread
         self.input_transform = input_transform
         self.seq_len = seq_len
@@ -113,18 +117,16 @@ class VODataset(data.Dataset):
 
     def __getitem__(self, index):
         seq = []
-        for i in range(self.seq_len):
-            cur_l = self.image_loader(self.data[index][i][0])
-            nxt_l = self.image_loader(self.data[index][i][1])
+        cur_l = self.image_loader(self.data[index][0])
+        nxt_l = self.image_loader(self.data[index][1])
+          
+        if self.input_transform:
+            cur_l = self.input_transform(cur_l)
+            nxt_l = self.input_transform(nxt_l)
             
-            if self.input_transform:
-                cur_l = self.input_transform(cur_l)
-                nxt_l = self.input_transform(nxt_l)
-            
-            seq.append(torch.stack([cur_l, nxt_l]))
-        pose = torch.tensor(self.data[index][self.seq_len])
+        pose = torch.tensor(self.pose)
         pose = pose.to(torch.float32)
-        return torch.stack(seq), pose
+        return torch.stack([cur_l, nxt_l]), pose
     
     def read_poses(self, path):
         poses = []
