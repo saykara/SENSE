@@ -8,6 +8,8 @@ LOAD_DIR=/content/model_0040.pth            # The model that we continue trainin
 
 ### There are two main architectures for SENSE model [SENSE, SENSENeXt]
 ### enc-arch argument decides the architecture, [psm] for SENSE or [psmnext] for SENSENeXt
+### for decoders [pwcdc, pwcdcnext] arguments changes between decoder archs.
+### dec-arch => disparity decoder, flow-dec-arch => optical flow decoder
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset sceneflow \
