@@ -165,10 +165,10 @@ def main(args):
     random.seed(args.seed)
     
     # Flow producer model (PSMNexT)
-    holistic_scene_model_path = '/content/model_0068.pth'
+    holistic_scene_model_path = args.flow_model
     
     # EGO encoder model
-    ego_model_path = '/content/model_0009.pth'
+    ego_model_path = args.enc_model
     
     # Data load
     train_loader, validation_loader, preprocess = make_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, args)

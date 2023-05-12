@@ -2,8 +2,12 @@
 
 export PYTHONPATH=./
 
-RES_DIR=/content/drive/MyDrive/Thesis/Model
-BASE_DIR=/content
+RES_DIR=/content/drive/MyDrive/Thesis/Model # The directory where the models will be saved.
+BASE_DIR=/content                           # Base directory for dataset
+LOAD_DIR=/content/model_0040.pth            # The model that we continue training, put None at start.
+
+### There are two main architectures for SENSE model [SENSE, SENSENeXt]
+### enc-arch argument decides the architecture, [psm] for SENSE or [psmnext] for SENSENeXt
 
 python tools/train_joint_synthetic_sceneflow.py pre-train \
    --dataset sceneflow \
@@ -15,8 +19,8 @@ python tools/train_joint_synthetic_sceneflow.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --loadmodel /content/model_0007.pth \
-   --resume /content/model_0007.pth \
+   --loadmodel ${LOAD_DIR} \
+   --resume ${LOAD_DIR} \
    --workers 2 \
    --lr 0.0004 \
    --lr-steps 70 \

@@ -2,10 +2,16 @@
 
 export PYTHONPATH=./
 
-RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder/next
-LOAD_DIR=/content/model_0040.pth
-BASE_DIR=/content/dataset
-FLOW_MODEL_DIR=/content/model_0068.pth
+RES_DIR=/content/drive/MyDrive/Thesis/Model/EgoAutoencoder/next  # The directory where the models will be saved.
+LOAD_DIR=/content/model_0040.pth                                 # The model that we continue training, put None at start.
+BASE_DIR=/content/dataset                                        # Base directory for dataset
+FLOW_MODEL_DIR=/content/model_0068.pth                           # The Optical Flow extractor model to load (Stage 1)
+
+### There are two main architectures for ego-motion estimation model, 
+### Stage 1 works as optical flow extractor [SENSE, SENSENeXt]
+### Stage 2 works as optical flow feature extractor [Enc, EncNeXt]
+### Stage1 network => enc-arch argument decides the architecture, [psm] for SENSE or [psmnext] for SENSENeXt
+### Stage2 network => ego-enc argument decides the architecture, [next] for nextified encoder else base encoder
 
 python tools/train_ego_autoencoder.py finetune \
    --dataset kittimalaga \
