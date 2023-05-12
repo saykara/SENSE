@@ -4,10 +4,11 @@ import cv2
 import numpy as np
 import torch
 import threading
+import torch.nn as nn 
 
 from sense.models.ego_autoencoder import EGOAutoEncoder
 from sense.lib.nn import DataParallelWithCallback
-from sense.models.dummy_scene import SceneNet
+from sense.models.dummy_scene import SceneNet, SceneNeXt
 
 f_mi = -5.0
 f_ma = 5.0
@@ -25,11 +26,11 @@ def min_max_flow(item):
         
 def min_max_eva(item):
     global e_mi, e_ma
-    if item < e_mi:
-        e_mi = item
+    if torch.min(item) < e_mi:
+        e_mi = torch.min(item)
         print("Eva min: ", e_mi)
-    if item > e_ma:
-        e_ma = item
+    if torch.max(item) > e_ma:
+        e_ma = torch.max(item)
         print("Eva max: ",e_ma)
 
 class PreprocessingCollateFn(object):
@@ -47,22 +48,29 @@ class PreprocessingCollateFn(object):
         self.encoder.to(device)
         self.encoder.eval()
         
-        self.optical_flow_model = DataParallelWithCallback(SceneNet(args)).cuda()
+        self.optical_flow_model = DataParallelWithCallback(SceneNeXt(args)).cuda()
         ckpt = torch.load(optical_flow_model_path)
         self.optical_flow_model.load_state_dict(ckpt['state_dict'])
         self.optical_flow_model.to(device)
         self.optical_flow_model.eval()
+
+        self.maxpool = nn.MaxPool2d(2)
         
-    def __call__(self, batch):
-        seqs, pose = batch
-        seqs, pose = seqs.to("cuda"), pose.to("cuda")
+    def __call__(self, x):
+        batch, pose = x
+        batch, pose = batch.to("cuda"), pose.to("cuda")
         flows = []
         with torch.no_grad():
-            for item in seqs:
-                flow = self.optical_flow_model(item[:][0], item[:][1])
-                flow = self.transform_flow(flow)   
+            for item in batch:
+                new_dim = item.size(1) * item.size(2)
+                # Reshape the tensor to the desired shape
+                output_tensor1 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, :3, :, :]
+                output_tensor2 = item.view(item.size(0), new_dim, item.size(3), item.size(4))[:, 3:, :, :]
+                flow = self.optical_flow_model(output_tensor1, output_tensor2)
+                flow = self.transform_flow(flow)
                 flow = self.encoder(flow)
                 flow = self.transform_final(flow)
+                flow = self.maxpool(flow)
                 flows.append(flow)
         return torch.stack(flows), pose
     

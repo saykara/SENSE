@@ -159,5 +159,7 @@ def parse_args():
 						help='architecture of the encoder')
 	parser.add_argument('--base-dir', default='/content/dataset',
 						help='base directory of dataset.')
- 
+	
+	parser.add_argument('--flow-model', default=None, type=str,
+						help='directory of flow model')
 	return parser

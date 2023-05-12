@@ -2,12 +2,13 @@
 
 export PYTHONPATH=./
 
-RES_DIR=./output/sceneflow
+RES_DIR=/content/drive/MyDrive/Thesis/Model/LSTM/new
 BASE_DIR=/content/dataset
+LOAD_DIR=/content/model_0040.pth
 
 python tools/train_lstm.py pre-train \
-   --dataset mixed \
-   --enc-arch psm \
+   --dataset kitti_vo \
+   --enc-arch psmnext \
    --dec-arch pwcdc \
    --disp-refinement hourglass \
    --flow-dec-arch pwcdc \
@@ -15,13 +16,15 @@ python tools/train_lstm.py pre-train \
    --flow-refinement none \
    --maxdisp 192 \
    --savemodel ${RES_DIR} \
-   --workers 0 \
+   --loadmodel ${LOAD_DIR} \
+   --resume ${LOAD_DIR} \
+   --workers 2 \
    --lr 0.0001 \
-   --lr-steps 70 \
+   --lr-steps 20 \
    --lr-gamma 0.1 \
-   --epochs 2 \
+   --epochs 60 \
    --bn-type syncbn \
-   --batch-size 4 \
+   --batch-size 20 \
    --corr-radius 4  \
    --disp-crop-imh 256 \
    --disp-crop-imw 512 \
@@ -29,4 +32,5 @@ python tools/train_lstm.py pre-train \
    --flow-crop-imw 640 \
    --disp-loss-weight 0.25 \
    --print-freq 20 \
-   --base-dir ${BASE_DIR}
+   --base-dir ${BASE_DIR} \
+   --kernel-size 7

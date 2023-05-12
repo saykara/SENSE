@@ -34,16 +34,21 @@ class RMSLELoss(nn.Module):
 
 def make_data_helper(path):
     if args.dataset == "kitti_vo":
-        train_sequences = [0, 2, 8, 9]
-        train_data, test_data = kitti_vo.kitti_vo_data_helper(path, train_sequences)
+        train_sequences = [0, 2, 4, 5, 6, 8, 9]
+        kitti_val_sequences = [3, 10]
+        # 1, 7 will be test
+        train_data, test_data = kitti_vo.kitti_vo_data_helper(path, train_sequences, kitti_val_sequences)
     elif args.dataset == "malaga":
         train_sequences = [1, 4, 6, 7, 8, 10, 11]
-        train_data, test_data = malaga.malaga_data_helper(path, train_sequences)
+        malaga_val_sequences = [2, 9]
+        train_data, test_data = malaga.malaga_data_helper(path, train_sequences, malaga_val_sequences)
     elif args.dataset == "mixed":
         kitti_train_sequences = [0, 2, 8, 9]
+        kitti_val_sequences = [3, 10]
         malaga_train_sequences = [1, 4, 6, 7, 8, 10, 11]
-        kitti_train, kitti_test = kitti_vo.kitti_vo_data_helper(path, kitti_train_sequences)
-        malaga_train, malaga_test = malaga.malaga_data_helper(path, malaga_train_sequences)
+        malaga_val_sequences = [2, 9]
+        kitti_train, kitti_test = kitti_vo.kitti_vo_data_helper(path, kitti_train_sequences, kitti_val_sequences)
+        malaga_train, malaga_test = malaga.malaga_data_helper(path, malaga_train_sequences, malaga_val_sequences)
         train_data = kitti_train + malaga_train
         test_data = kitti_test + malaga_test
     else:
@@ -77,10 +82,10 @@ def make_data_loader(path, of_model, enc, args):
         transforms.RandomHorizontalFlip(0.3),
         transforms.RandomVerticalFlip(0.3)])
     flow_transform = torchvision.transforms.Compose([
-        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-400.0, 400.0]),
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-1000.0, 1000.0]),
     ])
     final_transform = torchvision.transforms.Compose([
-        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-60.0, 60.0]),
+        flow_transforms.NormalizeFlowOnly(mean=[0,0],std=[-210.0, 210.0]),
     ])
  
     train_data, test_data = data_cacher(path, args)
@@ -132,11 +137,7 @@ def validation(model, data, criteria):
         
 def save_checkpoint(model, optimizer, epoch, global_step, args):
     #SAVE
-    global temp_save
-    now = datetime.now().strftime("%d-%m-%H-%M")
-    if temp_save == None:
-        temp_save = f"lstm_{now}"
-    save_dir = os.path.join(args.savemodel, temp_save)
+    save_dir = args.savemodel
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -164,17 +165,18 @@ def main(args):
     random.seed(args.seed)
     
     # Flow producer model (PSMNexT)
-    holistic_scene_model_path = 'data/pretrained_models/kitti2012+kitti2015_new_lr_schedule_lr_disrupt+semi_loss_v3.pth'
+    holistic_scene_model_path = '/content/model_0068.pth'
     
     # EGO encoder model
-    ego_model_path = 'data/pretrained_models/model_0040.pth'
+    ego_model_path = '/content/model_0009.pth'
     
     # Data load
     train_loader, validation_loader, preprocess = make_data_loader(args.base_dir, holistic_scene_model_path, ego_model_path, args)
     # train_loader, validation_loader, disp_test_loader = tjss.make_data_loader(args)
     
     # Make model
-    model = EgoRnn(30)
+    model = EgoRnn(30720)
+    model = model.cuda()
     print('Number of LSTM parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()]))
     )
@@ -187,7 +189,7 @@ def main(args):
     )
     # TODO Criteria
     criteria = nn.MSELoss()
-
+    start_epoch = 1
     # Save & Load model
     if args.loadmodel is not None:
         ckpt = torch.load(args.loadmodel)
@@ -203,13 +205,9 @@ def main(args):
         print('==> Manually resumed training from {}.'.format(args.resume))
 
     # Print format
-    print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.3f}\t{}\t{:.6f}'
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    print_format = '{}\t{:d}\t{:d}\t{:d}\t{:.6f}\t{}\t{:.6f}'
 
     # Train
-    start_epoch = 1
     global_step = 0
     lr = args.lr
     
